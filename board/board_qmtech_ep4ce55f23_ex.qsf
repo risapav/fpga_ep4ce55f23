@@ -1,0 +1,106 @@
+# ============================================================================
+# Doplnené periférie: HDMI, Ethernet (LAN8720), SD Card, Kamera OV5640
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# HDMI (vychádza z TMDS štandardu)
+# ----------------------------------------------------------------------------
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_SCL
+set_location_assignment PIN_E19 -to HDMI_SCL
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_SDA
+set_location_assignment PIN_D20 -to HDMI_SDA
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_CEC
+set_location_assignment PIN_D19 -to HDMI_CEC
+
+# TMDS dáta (iba výstup z FPGA cez rezistory do HDMI konektora)
+set_location_assignment PIN_B20 -to TMDS_TX2_P
+set_location_assignment PIN_A20 -to TMDS_TX2_N
+set_location_assignment PIN_D18 -to TMDS_TX1_P
+set_location_assignment PIN_C18 -to TMDS_TX1_N
+set_location_assignment PIN_G18 -to TMDS_TX0_P
+set_location_assignment PIN_F18 -to TMDS_TX0_N
+set_location_assignment PIN_H19 -to TMDS_CLK_P
+set_location_assignment PIN_G19 -to TMDS_CLK_N
+
+# ----------------------------------------------------------------------------
+# Ethernet (LAN8720A – RMII interface)
+# ----------------------------------------------------------------------------
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_REF_CLK
+set_location_assignment PIN_E13 -to ETH_REF_CLK
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_MDIO
+set_location_assignment PIN_F13 -to ETH_MDIO
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_MDC
+set_location_assignment PIN_G13 -to ETH_MDC
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_CRS_DV
+set_location_assignment PIN_D13 -to ETH_CRS_DV
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_RXD0
+set_location_assignment PIN_E14 -to ETH_RXD0
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_RXD1
+set_location_assignment PIN_F14 -to ETH_RXD1
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TX_EN
+set_location_assignment PIN_G14 -to ETH_TX_EN
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TXD0
+set_location_assignment PIN_H14 -to ETH_TXD0
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TXD1
+set_location_assignment PIN_J14 -to ETH_TXD1
+
+# ----------------------------------------------------------------------------
+# SD Card (SPI Mode)
+# ----------------------------------------------------------------------------
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_CS
+set_location_assignment PIN_F19 -to SD_CS
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_CLK
+set_location_assignment PIN_E18 -to SD_CLK
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_MOSI
+set_location_assignment PIN_C19 -to SD_MOSI
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_MISO
+set_location_assignment PIN_B19 -to SD_MISO
+
+# ----------------------------------------------------------------------------
+# Kamera OV5640 (typicky cez SCCB/I2C + DVP rozhranie)
+# ----------------------------------------------------------------------------
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_SCL
+set_location_assignment PIN_T17 -to CAM_SCL
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_SDA
+set_location_assignment PIN_R17 -to CAM_SDA
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_PCLK
+set_location_assignment PIN_T16 -to CAM_PCLK
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_VSYNC
+set_location_assignment PIN_P16 -to CAM_VSYNC
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_HREF
+set_location_assignment PIN_N16 -to CAM_HREF
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_XCLK
+set_location_assignment PIN_M16 -to CAM_XCLK
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_RST_N
+set_location_assignment PIN_L16 -to CAM_RST_N
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_PWDN
+set_location_assignment PIN_K16 -to CAM_PWDN
+
+# DVP Data [D7:D0]
+set_location_assignment PIN_T15 -to CAM_D7
+set_location_assignment PIN_R15 -to CAM_D6
+set_location_assignment PIN_P15 -to CAM_D5
+set_location_assignment PIN_N15 -to CAM_D4
+set_location_assignment PIN_M15 -to CAM_D3
+set_location_assignment PIN_L15 -to CAM_D2
+set_location_assignment PIN_K15 -to CAM_D1
+set_location_assignment PIN_J15 -to CAM_D0

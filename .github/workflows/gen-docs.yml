@@ -1,0 +1,77 @@
+name: Generuj dokumentáciu
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+on:
+  push:
+    paths:
+      - "src/**/*.sv"
+      - ".github/workflows/gen-docs.yml"
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛎️ Checkout kódu
+        uses: actions/checkout@v4
+
+      - name: 🐍 Nastav Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Inštaluj závislosti a spusti generátor
+        run: |
+          pip install --upgrade pip
+          python scripts/extract_sv_docs.py
+          python scripts/generate_index.py
+
+      - name: 🔍 Debug – výpis vygenerovaných súborov
+        run: |
+          echo "Obsah priečinka docs_md/modules:"
+          ls -lh docs_md/modules || echo "⚠️ Priečinok neexistuje alebo je prázdny"
+
+      - name: ✅ Commit vygenerovaných súborov (ak existujú)
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # Spočítaj vstupné .sv súbory
+          SRC_COUNT=$(find src -type f -name "*.sv" | wc -l)
+          echo "📦 .sv súborov na spracovanie: $SRC_COUNT"
+
+          # Spočítaj vygenerované .md súbory
+          if ls docs_md/modules/*.md 1> /dev/null 2>&1; then
+            MD_COUNT=$(find docs_md/modules -type f -name "*.md" | wc -l)
+            echo "📝 Vygenerovaných .md súborov: $MD_COUNT"
+
+            # Pridaj a commitni zmeny
+            git add docs_md/index.md || true
+            find docs_md/modules -name "*.md" -exec git add {} +
+
+            # Spočítaj počet zmenených súborov (staged)
+            CHANGED_COUNT=$(git diff --cached --name-only | wc -l)
+
+            if [ "$CHANGED_COUNT" -gt 0 ]; then
+              git commit -m "📝 Auto-generovaná dokumentácia z .sv súborov"
+              git push
+              echo "✅ Zmeny commitnuté: $CHANGED_COUNT súborov"
+            else
+              echo "⚠️ Žiadne zmeny na commit."
+            fi
+          else
+            echo "⚠️ Neboli nájdené žiadne .md súbory na pridanie."
+            MD_COUNT=0
+          fi
+
+          echo "📊 Prehľad:"
+          echo " - .sv súborov prehliadnutých : $SRC_COUNT"
+          echo " - .md súborov vygenerovaných : $MD_COUNT"
+          echo " - .md súborov commitnutých   : $CHANGED_COUNT"
+
+

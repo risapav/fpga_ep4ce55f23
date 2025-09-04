@@ -1,0 +1,36 @@
+name: Lint check according to ChipsAlliance rules
+
+permissions:
+  contents: read
+  pull-requests: write # Potrebné pre reviewdog na zápis komentárov do PR
+
+on:
+#  push:
+#    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verilog-lint: # Mierne upravený názov pre prehľadnosť
+    name: Verible Linter
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Použitie najnovšej stabilnej verzie
+
+      - name: Run Verible Linter
+        uses: chipsalliance/verible-linter-action@main
+        with:
+          paths: |
+            ./src
+          exclude_paths: |
+            ./src/deprecated
+          # Argumenty sú teraz čistejšie, pravidlá sú v dedikovanom súbore
+          extra_args: "--rules_config_path ./.verible-lint.rules --lint_fatal"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reviewdog_reporter: github-pr-check
