@@ -1,2 +1,0 @@
-# requirements.txt
-markdown>=3.4.1
