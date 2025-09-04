@@ -40,14 +40,17 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
+      
           git checkout --orphan gh-pages
           git rm -rf .
-
-          # presuň HTML + README
+      
+          # zachovaj adresárovú štruktúru modules/ + README.html
           cp -r docs_md/* .
-
+      
+          # zabráni spracovaniu Jekyll
           touch .nojekyll
+      
           git add .
           git commit -m "📝 Auto-generovaná dokumentácia a HTML"
           git push --force origin gh-pages
+
