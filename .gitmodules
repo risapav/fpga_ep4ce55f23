@@ -1,3 +1,6 @@
 [submodule "fpga_common"]
     path = common
     url = https://github.com/risapav/fpga_common.git
+[submodule "common"]
+	path = common
+	url = https://github.com/risapav/fpga_common.git
