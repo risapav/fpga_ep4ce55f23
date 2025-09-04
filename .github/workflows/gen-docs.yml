@@ -45,7 +45,8 @@ jobs:
           git rm -rf .
       
           # zachovaj adresárovú štruktúru modules/ + README.html
-          cp -r docs_md/* .
+          #cp -r docs_md/* .
+          mv docs_md/* .
       
           # zabráni spracovaniu Jekyll
           touch .nojekyll
