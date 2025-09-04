@@ -49,7 +49,7 @@ jobs:
           git rm -rf .
 
           # presuň dokumentáciu na root
-          cp -r docs_md/* .
+          mv -r docs_md/* .
 
           git add .
           git commit -m "📝 Auto-generovaná dokumentácia z $(date +'%Y-%m-%d %H:%M:%S')"
