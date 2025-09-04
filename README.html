@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>README</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="dokumentacia-modulov">Dokumentácia modulov</h1>
+<h2 id="zoznam">🔧 Zoznam</h2>
+<table>
+<thead>
+<tr>
+<th>Názov modulu</th>
+<th>Popis</th>
+<th>Zdrojový súbor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="modules/axis/axis_checker_generator.md">axis_checker_generator</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_checker_generator.sv">axis/axis_checker_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_frame_streamer.md">axis_frame_streamer</a></td>
+<td>AXI4-Stream Frame Streamer generujúci súradnice pixelov.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_frame_streamer.sv">axis/axis_frame_streamer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_gradient_generator.md">axis_gradient_generator</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_gradient_generator.sv">axis/axis_gradient_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_to_vga.md">axis_to_vga</a></td>
+<td>Premosťuje AXI4-Stream dáta na paralelný VGA výstup.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_to_vga.sv">axis/axis_to_vga.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/cdc/cdc_async_fifo.md">cdc_async_fifo</a></td>
+<td>Asynchrónny FIFO buffer s oddelenými hodinovými doménami pre zápis a čítanie.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/cdc/cdc_async_fifo.sv">cdc/cdc_async_fifo.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/cdc/cdc_reset_synchronizer.md">cdc_reset_synchronizer</a></td>
+<td>Synchronizátor asynchrónneho resetu pre cieľovú hodinovú doménu.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/cdc/cdc_reset_synchronizer.sv">cdc/cdc_reset_synchronizer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/cdc/cdc_two_flop_synchronizer.md">cdc_two_flop_synchronizer</a></td>
+<td>Dvojstupňový synchronizátor signálu pre CDC (Clock Domain Crossing).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/cdc/cdc_two_flop_synchronizer.sv">cdc/cdc_two_flop_synchronizer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/CheckerPattern.md">CheckerPattern</a></td>
+<td>AXI4-Stream generátor šachovnicového vzoru (checkerboard pattern)</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_checker_generator.sv">axis/axis_checker_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/GradientPattern.md">GradientPattern</a></td>
+<td>Generuje AXI4-Stream výstup s farebným gradientom.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_gradient_generator.sv">axis/axis_gradient_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axi/my_axi_peripheral.md">my_axi_peripheral</a></td>
+<td>Definície AXI rozhraní (AXI4, AXI4-Lite, AXI4-Stream) pre použitie v SoC dizajne.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axi/axi_interfaces.sv">axi/axi_interfaces.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga_01/top.md">top</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga_01/top.sv">vga_01/top.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/led_01/top_2.md">top</a></td>
+<td>Testovací modul pre FPGA, ktorý generuje tri nezávislé vizuálne efekty na troch skupinách LED diód v sekundových intervaloch.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/led_01/top.sv">led_01/top.sv</a></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

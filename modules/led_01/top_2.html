@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>top_2</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-top">Modul <code>top</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Testovací modul pre FPGA, ktorý generuje tri nezávislé vizuálne efekty na troch skupinách LED diód v sekundových intervaloch.</p>
+<p>Modul implementuje tri odlišné svetelné vzory pre demonštračné a testovacie účely. Hlavný časovač, odvodený od systémových hodín, generuje impulz každú sekundu, ktorý spúšťa zmenu stavu vo všetkých troch efektoch súčasne.
+Podporované efekty sú:
+1. 6-bitové vstavané LED: Klasické "bežiace svetlo" (cyklický posun).
+2. 8-bitové LED na J10: Efekt "plniaceho sa stĺpca", kde sa LED postupne rozsvecujú a po dosiahnutí plného počtu zhasnú.
+3. 8-bitové LED na J11: Efekt "Cylon Eye" / "Larson Scanner", kde sa jedna LED pohybuje tam a späť po celej dĺžke.</p>
+<p>Vstupy BSW a výstupy pre 7-segmentový displej a VGA sú v návrhu deklarované, ale nie sú aktívne využívané a sú nastavené na log. 0.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: CLK_FREQ         Frekvencia vstupných systémových hodín v Hz. Predvolená hodnota je 50,000,000 (50 MHz).</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SYS_CLK</code></td>
+<td>Vstupný hodinový signál.</td>
+</tr>
+<tr>
+<td><code>RESET_N</code></td>
+<td>Aktívny nízky asynchrónny reset signál.</td>
+</tr>
+<tr>
+<td><code>BSW</code></td>
+<td>6-bitový vstup z prepínačov (v tomto návrhu nevyužitý).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LED</code></td>
+<td>6-bitový výstup pre vstavané LED diódy (efekt bežiaceho svetla).</td>
+</tr>
+<tr>
+<td><code>LED_J10</code></td>
+<td>8-bitový výstup pre externé LED diódy (efekt plniaceho sa stĺpca).</td>
+</tr>
+<tr>
+<td><code>LED_J11</code></td>
+<td>8-bitový výstup pre externé LED diódy (efekt 'Cylon Eye').</td>
+</tr>
+<tr>
+<td><code>SMG_SEG</code></td>
+<td>Výstup pre segmenty 7-segmentového displeja (nevyužitý, nastavený na 0).</td>
+</tr>
+<tr>
+<td><code>SMG_DIG</code></td>
+<td>Výstup pre anódy/katódy 7-segmentového displeja (nevyužitý, nastavený na 0).</td>
+</tr>
+<tr>
+<td><code>VGA_R,</code></td>
+<td>G, B      Výstupy pre farebné zložky VGA (nevyužité, nastavené na 0).</td>
+</tr>
+<tr>
+<td><code>VGA_HS,</code></td>
+<td>VGA_VS   Výstupy pre VGA synchronizáciu (nevyužité, nastavené na 0).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">// Ukážka inštancie modulu pre 100 MHz hodiny
+top #(
+.CLK_FREQ(100_000_000)
+) u_led_tester (
+.SYS_CLK(i_clk_100mhz),
+.RESET_N(i_reset_n),
+.LED(o_board_leds),
+.LED_J10(o_j10_leds),
+.LED_J11(o_j11_leds),
+// Ostatné porty môžu byť ponechané nepripojené, ak to kontext dovoľuje
+.BSW(),
+.SMG_SEG(),
+.SMG_DIG(),
+.VGA_R(),
+.VGA_G(),
+.VGA_B(),
+.VGA_HS(),
+.VGA_VS()
+);
+</code></pre>
+</body>
+</html>

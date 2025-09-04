@@ -1,0 +1,74 @@
+[
+  {
+    "module": "my_axi_peripheral",
+    "source": "axi/axi_interfaces.sv",
+    "brief": "Definície AXI rozhraní (AXI4, AXI4-Lite, AXI4-Stream) pre použitie v SoC dizajne.",
+    "doc": "axi/my_axi_peripheral.md"
+  },
+  {
+    "module": "top",
+    "source": "vga_01/top.sv",
+    "brief": "",
+    "doc": "vga_01/top.md"
+  },
+  {
+    "module": "axis_to_vga",
+    "source": "axis/axis_to_vga.sv",
+    "brief": "Premosťuje AXI4-Stream dáta na paralelný VGA výstup.",
+    "doc": "axis/axis_to_vga.md"
+  },
+  {
+    "module": "CheckerPattern",
+    "source": "axis/axis_checker_generator.sv",
+    "brief": "AXI4-Stream generátor šachovnicového vzoru (checkerboard pattern)",
+    "doc": "axis/CheckerPattern.md"
+  },
+  {
+    "module": "axis_checker_generator",
+    "source": "axis/axis_checker_generator.sv",
+    "brief": "",
+    "doc": "axis/axis_checker_generator.md"
+  },
+  {
+    "module": "GradientPattern",
+    "source": "axis/axis_gradient_generator.sv",
+    "brief": "Generuje AXI4-Stream výstup s farebným gradientom.",
+    "doc": "axis/GradientPattern.md"
+  },
+  {
+    "module": "axis_gradient_generator",
+    "source": "axis/axis_gradient_generator.sv",
+    "brief": "",
+    "doc": "axis/axis_gradient_generator.md"
+  },
+  {
+    "module": "axis_frame_streamer",
+    "source": "axis/axis_frame_streamer.sv",
+    "brief": "AXI4-Stream Frame Streamer generujúci súradnice pixelov.",
+    "doc": "axis/axis_frame_streamer.md"
+  },
+  {
+    "module": "top",
+    "source": "led_01/top.sv",
+    "brief": "Testovací modul pre FPGA, ktorý generuje tri nezávislé vizuálne efekty na troch skupinách LED diód v sekundových intervaloch.",
+    "doc": "led_01/top_2.md"
+  },
+  {
+    "module": "cdc_two_flop_synchronizer",
+    "source": "cdc/cdc_two_flop_synchronizer.sv",
+    "brief": "Dvojstupňový synchronizátor signálu pre CDC (Clock Domain Crossing).",
+    "doc": "cdc/cdc_two_flop_synchronizer.md"
+  },
+  {
+    "module": "cdc_async_fifo",
+    "source": "cdc/cdc_async_fifo.sv",
+    "brief": "Asynchrónny FIFO buffer s oddelenými hodinovými doménami pre zápis a čítanie.",
+    "doc": "cdc/cdc_async_fifo.md"
+  },
+  {
+    "module": "cdc_reset_synchronizer",
+    "source": "cdc/cdc_reset_synchronizer.sv",
+    "brief": "Synchronizátor asynchrónneho resetu pre cieľovú hodinovú doménu.",
+    "doc": "cdc/cdc_reset_synchronizer.md"
+  }
+]
