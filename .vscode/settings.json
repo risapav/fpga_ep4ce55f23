@@ -1,0 +1,48 @@
+{
+    // Nastaví počet medzier pri stlačení klávesy Tab
+    "editor.tabSize": 2,
+
+    // Zabezpečí, aby sa vkladali medzery namiesto tabulátorov
+    "editor.insertSpaces": true,
+
+    // Vypne automatickú detekciu odsadenia, aby sa vždy použili 2 medzery
+    "editor.detectIndentation": false,
+
+    // Nastavenie špecificky pre SystemVerilog a Verilog
+    "[systemverilog]": {
+    "editor.tabSize": 2
+    },
+
+    "[verilog]": {
+    "editor.tabSize": 2
+    },
+
+    // --- Všeobecné nastavenia editora ---
+    "files.trimTrailingWhitespace": true,
+    "editor.renderWhitespace": "boundary",
+
+    // --- Konfigurácia rozšírenia Verilog-HDL ---
+    "verilog.linting.linter": "iverilog", // Použijeme Icarus Verilog pre linting
+
+    // Kľúčová časť: Cesty k vašim RTL súborom
+    // VS Code musí vedieť, kde hľadať moduly, ktoré inštanciujete.
+    // Použijeme zástupné znaky (**) na rekurzívne prehľadávanie.
+    "verilog.includePaths": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/lib",
+        "${workspaceFolder}/sim",
+        // Pre IP jadrá je dôležité pridať cestu k ich simulačným modelom.
+        // Tento vzor by mal pokryť väčšinu prípadov.
+        "${workspaceFolder}/cores/**/simulation",
+        "${workspaceFolder}/cores/**/synthesis" // Niekedy sú modely aj tu
+    ],
+
+    // Formátovanie kódu (voliteľné, ale odporúčané)
+    "verilog.formatting.formatter": "verible", // Môžete použiť aj iný formátor
+    "[verilog]": {
+        "editor.defaultFormatter": "mshr-h.verilog-hdl"
+    },
+    "[systemverilog]": {
+        "editor.defaultFormatter": "mshr-h.verilog-hdl"
+    }
+}
