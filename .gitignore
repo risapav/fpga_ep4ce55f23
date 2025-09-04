@@ -21,7 +21,7 @@ vsim.dbg
 /incremental_db/
 /output_files/
 /simulation/
-/unsaved/  
+/unsaved/
 /greybox_tmp/
 /atom_netlists/
 *.qws
@@ -33,6 +33,11 @@ vsim.dbg
 *.sof
 *.pof
 *.sld
+
+*.done
+*.smsg
+*.pin
+
 
 # --- Všeobecné dočasné súbory ---
 *.log
