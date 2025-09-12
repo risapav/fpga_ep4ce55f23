@@ -99,6 +99,14 @@ if { [info exists USE_SDRAM] && $USE_SDRAM == 1 } {
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[15..0]
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[12..0]
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_BA[1..0]
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CAS_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CKE
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CLK
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CS_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_WE_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_RAS_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_UDQM
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_LDQM
   
   set_location_assignment PIN_V11  -to DRAM_DQ[15]
   set_location_assignment PIN_W10  -to DRAM_DQ[14]
@@ -133,29 +141,16 @@ if { [info exists USE_SDRAM] && $USE_SDRAM == 1 } {
   
   set_location_assignment PIN_W2   -to DRAM_BA[1]
   set_location_assignment PIN_Y1   -to DRAM_BA[0]
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CAS_N
+    
   set_location_assignment PIN_AA4 -to DRAM_CAS_N
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CKE
   set_location_assignment PIN_W6 -to DRAM_CKE
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CLK
   set_location_assignment PIN_Y6 -to DRAM_CLK
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CS_N
   set_location_assignment PIN_AA3 -to DRAM_CS_N
   
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_WE_N
+
   set_location_assignment PIN_AB4 -to DRAM_WE_N
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_RAS_N
   set_location_assignment PIN_AB3 -to DRAM_RAS_N
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_UDQM
   set_location_assignment PIN_W7 -to DRAM_UDQM
-  
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_LDQM
   set_location_assignment PIN_AA5 -to DRAM_LDQM
 }
 
@@ -170,73 +165,58 @@ if { [info exists USE_UART] && $USE_UART == 1 } {
 #--- Ethernet (LAN8720A – RMII interface) ---
 if { [info exists USE_ETH] && $USE_ETH == 1 } {
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_REF_CLK
-  set_location_assignment PIN_E13 -to ETH_REF_CLK
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_MDIO
-  set_location_assignment PIN_F13 -to ETH_MDIO
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_MDC
-  set_location_assignment PIN_G13 -to ETH_MDC
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_CRS_DV
-  set_location_assignment PIN_D13 -to ETH_CRS_DV
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_RXD0
-  set_location_assignment PIN_E14 -to ETH_RXD0
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_RXD1
-  set_location_assignment PIN_F14 -to ETH_RXD1
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TX_EN
-  set_location_assignment PIN_G14 -to ETH_TX_EN
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TXD0
-  set_location_assignment PIN_H14 -to ETH_TXD0
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TXD1
+  
+  set_location_assignment PIN_E13 -to ETH_REF_CLK
+  set_location_assignment PIN_F13 -to ETH_MDIO
+  set_location_assignment PIN_G13 -to ETH_MDC
+  set_location_assignment PIN_D13 -to ETH_CRS_DV
+  set_location_assignment PIN_E14 -to ETH_RXD0
+  set_location_assignment PIN_F14 -to ETH_RXD1
+  set_location_assignment PIN_G14 -to ETH_TX_EN
+  set_location_assignment PIN_H14 -to ETH_TXD0
   set_location_assignment PIN_J14 -to ETH_TXD1
 }
 
 #--- SD Card (SPI Mode) ---
 if { [info exists USE_SDC] && $USE_SDC == 1 } {
-
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_CS
-  set_location_assignment PIN_F19 -to SD_CS
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_CLK
-  set_location_assignment PIN_E18 -to SD_CLK
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_MOSI
-  set_location_assignment PIN_C19 -to SD_MOSI
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_MISO
+  set_location_assignment PIN_F19 -to SD_CS
+  set_location_assignment PIN_E18 -to SD_CLK
+  set_location_assignment PIN_C19 -to SD_MOSI
   set_location_assignment PIN_B19 -to SD_MISO
 }
 
 #--- Kamera OV5640 (typicky cez SCCB/I2C + DVP rozhranie) ---
 if { [info exists USE_CAM] && $USE_CAM == 1 } {
+  # Nastavenie I/O štandardu pre celú dátovú zbernicu naraz
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_D[7..0]
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_SCL
-  set_location_assignment PIN_T17 -to CAM_SCL
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_SDA
-  set_location_assignment PIN_R17 -to CAM_SDA
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_PCLK
-  set_location_assignment PIN_T16 -to CAM_PCLK
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_VSYNC
-  set_location_assignment PIN_P16 -to CAM_VSYNC
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_HREF
-  set_location_assignment PIN_N16 -to CAM_HREF
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_XCLK
-  set_location_assignment PIN_M16 -to CAM_XCLK
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_RST_N
-  set_location_assignment PIN_L16 -to CAM_RST_N
-  
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_PWDN
+  
+  set_location_assignment PIN_T17 -to CAM_SCL
+  set_location_assignment PIN_R17 -to CAM_SDA
+  set_location_assignment PIN_T16 -to CAM_PCLK
+  set_location_assignment PIN_P16 -to CAM_VSYNC
+  set_location_assignment PIN_N16 -to CAM_HREF
+  set_location_assignment PIN_M16 -to CAM_XCLK
+  set_location_assignment PIN_L16 -to CAM_RST_N
   set_location_assignment PIN_K16 -to CAM_PWDN
   
   # DVP Data [D7:D0]
@@ -256,12 +236,24 @@ if { [info exists USE_CAM] && $USE_CAM == 1 } {
 # This section creates Verilog macros (`define) based on the settings from
 # the main .qsf file, allowing for conditional compilation in top.sv.
 
-if { [info exists USE_7_SEG_DISPLAY] && $USE_7_SEG_DISPLAY == 1 } { set_global_assignment -name VERILOG_MACRO "USE_7_SEG_DISPLAY=1" }
-if { [info exists USE_LEDS] && $USE_LEDS == 1 } { set_global_assignment -name VERILOG_MACRO "USE_LEDS=1" }
-if { [info exists USE_BUTTONS] && $USE_BUTTONS == 1 } { set_global_assignment -name VERILOG_MACRO "USE_BUTTONS=1" }
-if { [info exists USE_VGA] && $USE_VGA == 1 } { set_global_assignment -name VERILOG_MACRO "USE_VGA=1" }
-if { [info exists USE_SDRAM] && $USE_SDRAM == 1 } { set_global_assignment -name VERILOG_MACRO "USE_SDRAM=1" }
-if { [info exists USE_UART] && $USE_UART == 1 } { set_global_assignment -name VERILOG_MACRO "USE_UART=1" }
-if { [info exists USE_ETH] && $USE_ETH == 1 } { set_global_assignment -name VERILOG_MACRO "USE_ETH=1" }
-if { [info exists USE_SDC] && $USE_SDC == 1 } { set_global_assignment -name VERILOG_MACRO "USE_SDC=1" }
-if { [info exists USE_CAM] && $USE_CAM == 1 } { set_global_assignment -name VERILOG_MACRO "USE_CAM=1" }
+# Zoznam všetkých konfigurovateľných periférií
+set peripheral_list {
+    7_SEG_DISPLAY
+    LEDS
+    BUTTONS
+    VGA
+    SDRAM
+    UART
+    ETH
+    SDC
+    CAM
+}
+
+# Cyklus, ktorý prejde zoznam a automaticky vytvorí makrá
+foreach peripheral $peripheral_list {
+    set var_name "USE_${peripheral}"
+    if { [info exists $var_name] && [set $var_name] == 1 } {
+        set_global_assignment -name VERILOG_MACRO "${var_name}=1"
+        post_message "INFO: Passing macro to Verilog: ${var_name}=1"
+    }
+}
