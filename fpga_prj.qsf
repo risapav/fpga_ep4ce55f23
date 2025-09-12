@@ -20,9 +20,6 @@ set_global_assignment -name TOP_LEVEL_ENTITY top
 # -------------------------------------------------------------------------- #
 #               *** HARDWARE CONFIGURATION - EDIT THIS SECTION *** #
 # -------------------------------------------------------------------------- #
-
-source board/board_qmtech_ep4ce55f23.qsf
-
 #
 # Specify which module is connected to which PMOD connector.
 # Supported modules: "LED", "HDMI", "BUTTONS", "7SEG", etc.
@@ -30,6 +27,16 @@ source board/board_qmtech_ep4ce55f23.qsf
 
 set J10_MODULE "LED"
 set J11_MODULE "LED"
+
+# -------------------------------------------------------------------------- #
+#                  *** DO NOT EDIT BELOW THIS LINE *** #
+# -------------------------------------------------------------------------- #
+#
+# Source the Tcl script that contains the pin assignment logic.
+# This script will read the variables defined above.
+
+source board/board_qmtech_ep4ce55f23.qsf
+source board/pin_assignments.tcl
 
 # ----------------------------------------------------------------------------
 # vsetko nizsie sa moze vymazat
