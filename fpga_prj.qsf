@@ -17,8 +17,31 @@ set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
 # ----------------------------------------------------------------------------
 set_global_assignment -name TOP_LEVEL_ENTITY top
 
+# ============================================================================ #
+#                           MAIN PROJECT QSF FILE                              #
+# ============================================================================ #
+
+# --- Project Files ---
+set_global_assignment -name TOP_LEVEL_ENTITY top
+set_global_assignment -name SYSTEMVERILOG_FILE top.sv
+# ...
+
 # -------------------------------------------------------------------------- #
-#               *** HARDWARE CONFIGURATION - EDIT THIS SECTION *** #
+#      *** HARDWARE CONFIGURATION - ONBOARD PERIPHERALS - EDIT THIS SECTION *** #
+# -------------------------------------------------------------------------- #
+# Enable (1) or disable (0) the onboard peripherals for this project.
+# Disabling a peripheral will prevent its logic from being synthesized and
+# its pins from being assigned.
+
+set USE_7_SEG_DISPLAY   1
+set USE_ONBOARD_LEDS    1
+set USE_BUTTONS         1
+set USE_VGA             0  # <-- Príklad: VGA v tomto projekte nepoužívame
+set USE_SDRAM           0  # <-- Príklad: SDRAM v tomto projekte nepoužívame
+set USE_UART            1
+
+# -------------------------------------------------------------------------- #
+#      *** HARDWARE CONFIGURATION - PMOD CONNECTORS - EDIT THIS SECTION *** #
 # -------------------------------------------------------------------------- #
 #
 # Specify which module is connected to which PMOD connector.
@@ -26,7 +49,7 @@ set_global_assignment -name TOP_LEVEL_ENTITY top
 # Use "NONE" if the connector is not used.
 
 set J10_MODULE "LED"
-set J11_MODULE "LED"
+set J11_MODULE "NONE"
 
 # -------------------------------------------------------------------------- #
 #                  *** DO NOT EDIT BELOW THIS LINE *** #
@@ -35,7 +58,10 @@ set J11_MODULE "LED"
 # Source the Tcl script that contains the pin assignment logic.
 # This script will read the variables defined above.
 
-source board/board_qmtech_ep4ce55f23.qsf
+# --- Step 1: Source the static board definition file ---
+source board/qmtech_ep4ce55.tcl
+
+# --- Step 2: Source the dynamic peripheral assignment library ---
 source board/pin_assignments.tcl
 
 # ----------------------------------------------------------------------------
