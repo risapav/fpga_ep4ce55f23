@@ -257,11 +257,11 @@ if { [info exists USE_CAM] && $USE_CAM == 1 } {
 # the main .qsf file, allowing for conditional compilation in top.sv.
 
 if { [info exists USE_7_SEG_DISPLAY] && $USE_7_SEG_DISPLAY == 1 } { set_global_assignment -name VERILOG_MACRO "USE_7_SEG_DISPLAY=1" }
-if { [info exists USE_ONBOARD_LEDS] && $USE_ONBOARD_LEDS == 1 } { set_global_assignment -name VERILOG_MACRO "USE_ONBOARD_LEDS=1" }
+if { [info exists USE_LEDS] && $USE_LEDS == 1 } { set_global_assignment -name VERILOG_MACRO "USE_LEDS=1" }
 if { [info exists USE_BUTTONS] && $USE_BUTTONS == 1 } { set_global_assignment -name VERILOG_MACRO "USE_BUTTONS=1" }
 if { [info exists USE_VGA] && $USE_VGA == 1 } { set_global_assignment -name VERILOG_MACRO "USE_VGA=1" }
 if { [info exists USE_SDRAM] && $USE_SDRAM == 1 } { set_global_assignment -name VERILOG_MACRO "USE_SDRAM=1" }
 if { [info exists USE_UART] && $USE_UART == 1 } { set_global_assignment -name VERILOG_MACRO "USE_UART=1" }
-if { [info exists USE_UART] && $USE_ETH == 1 } { set_global_assignment -name VERILOG_MACRO "USE_ETH=1" }
-if { [info exists USE_UART] && $USE_SDC == 1 } { set_global_assignment -name VERILOG_MACRO "USE_SDC=1" }
-if { [info exists USE_UART] && $USE_CAM == 1 } { set_global_assignment -name VERILOG_MACRO "USE_CAM=1" }
+if { [info exists USE_ETH] && $USE_ETH == 1 } { set_global_assignment -name VERILOG_MACRO "USE_ETH=1" }
+if { [info exists USE_SDC] && $USE_SDC == 1 } { set_global_assignment -name VERILOG_MACRO "USE_SDC=1" }
+if { [info exists USE_CAM] && $USE_CAM == 1 } { set_global_assignment -name VERILOG_MACRO "USE_CAM=1" }
