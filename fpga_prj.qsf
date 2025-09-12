@@ -33,12 +33,12 @@ set_global_assignment -name SYSTEMVERILOG_FILE top.sv
 # Disabling a peripheral will prevent its logic from being synthesized and
 # its pins from being assigned.
 
-set USE_7_SEG_DISPLAY   1
-set USE_ONBOARD_LEDS    1
-set USE_BUTTONS         1
+set USE_7_SEG_DISPLAY   0
+set USE_LEDS            1
+set USE_BUTTONS         0
 set USE_VGA             0  # <-- Príklad: VGA v tomto projekte nepoužívame
 set USE_SDRAM           0  # <-- Príklad: SDRAM v tomto projekte nepoužívame
-set USE_UART            1
+set USE_UART            0
 
 # -------------------------------------------------------------------------- #
 #      *** HARDWARE CONFIGURATION - PMOD CONNECTORS - EDIT THIS SECTION *** #
@@ -49,7 +49,7 @@ set USE_UART            1
 # Use "NONE" if the connector is not used.
 
 set J10_MODULE "LED"
-set J11_MODULE "NONE"
+set J11_MODULE "LED"
 
 # -------------------------------------------------------------------------- #
 #                  *** DO NOT EDIT BELOW THIS LINE *** #
