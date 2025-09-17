@@ -20,12 +20,11 @@ module top (
     // KONFIGURÁCIA VGA režimu
     //==========================================================================
     //localparam VGA_mode_e C_VGA_MODE = VGA_640x480_60;
-	 //localparam VGA_mode_e C_VGA_MODE = VGA_800x600_60;
-	 //localparam VGA_mode_e C_VGA_MODE = VGA_1024x768_60;
-	 localparam vga_mode_e C_VGA_MODE = VGA_1280x1024_60;
+    //localparam VGA_mode_e C_VGA_MODE = VGA_800x600_60;
+    //localparam VGA_mode_e C_VGA_MODE = VGA_1024x768_60;
+    localparam vga_mode_e C_VGA_MODE = VGA_1280x1024_60;
 
-
-	 localparam int PixelClockHz = get_pixel_clock(C_VGA_MODE);
+    localparam int PixelClockHz = get_pixel_clock(C_VGA_MODE);
 
     //==========================================================================
     // PLL a RESET logika (generovanie pixelového hodinového signálu)
@@ -48,7 +47,7 @@ module top (
     //==========================================================================
     wire enable;
     assign enable = 1;
-    
+
     // --- Signály pre prepojenie modulov ---
     rgb565_t   generated_data; // Dáta z generátora obrazu
     rgb565_t   vga_data_out;   // Finálne dáta z VGA radiča
@@ -70,9 +69,9 @@ module top (
     end
 `else
     // Pre syntézu (Quartus) použijeme funkciu z balíčka
-	vga_params_t vga_params = get_vga_params(C_VGA_MODE);
-	assign h_line_params = vga_params.h_line;
-	assign v_line_params = vga_params.v_line;
+    vga_params_t vga_params = get_vga_params(C_VGA_MODE);
+    assign h_line_params = vga_params.h_line;
+    assign v_line_params = vga_params.v_line;
 
 `endif
 
