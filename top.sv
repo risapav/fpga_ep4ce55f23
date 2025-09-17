@@ -1,6 +1,7 @@
 `default_nettype none
 
 import vga_pkg::*;
+import hdmi_pkg::*;
 
 module top (
     input  logic       SYS_CLK,
@@ -13,48 +14,50 @@ module top (
     output logic [5:0] VGA_G,
     output logic [4:0] VGA_B,
     output logic       VGA_HS,
-    output logic       VGA_VS
+    output logic       VGA_VS,
+
+    output logic [3:0] HDMI_P_J11
 );
 
     //==========================================================================
     // KONFIGURÁCIA VGA režimu
     //==========================================================================
-    //localparam VGA_mode_e C_VGA_MODE = VGA_640x480_60;
-	 //localparam VGA_mode_e C_VGA_MODE = VGA_800x600_60;
-	 //localparam VGA_mode_e C_VGA_MODE = VGA_1024x768_60;
-	 localparam vga_mode_e C_VGA_MODE = VGA_1280x1024_60;
+  //localparam vga_mode_e C_VGA_MODE = VGA_640x480_60;
+  localparam vga_mode_e C_VGA_MODE = VGA_800x600_60;
+  //localparam vga_mode_e C_VGA_MODE = VGA_1024x768_60;
+  //localparam vga_mode_e C_VGA_MODE = VGA_1280x1024_60;
 
 
-	 localparam int PixelClockHz = get_pixel_clock(C_VGA_MODE);
+  localparam int PixelClockHz = get_pixel_clock(C_VGA_MODE);
 
     //==========================================================================
     // PLL a RESET logika (generovanie pixelového hodinového signálu)
     //==========================================================================
-    logic pixel_clk;
+    logic pixel_clk, pixel_clk5;
     logic pll_locked;
-    logic pix_rstn_sync;
+    logic rstn_sync;
 
     ClkPll clkpll_inst (
         .inclk0 (SYS_CLK),
         .areset (~RESET_N),
         .c0     (pixel_clk),
+        .c1     (pixel_clk5),
         .locked (pll_locked)
     );
 
-    assign pix_rstn_sync = RESET_N & pll_locked;
+    assign rstn_sync = RESET_N & pll_locked;
 
     //==========================================================================
     // ==                 Hlavné moduly a ich prepojenie                   ==
     //==========================================================================
     wire enable;
     assign enable = 1;
-    
+
     // --- Signály pre prepojenie modulov ---
     rgb565_t   generated_data; // Dáta z generátora obrazu
     rgb565_t   vga_data_out;   // Finálne dáta z VGA radiča
-    vga_sync_t vga_sync_out;   // Finálne sync signály z VGA radiča
-    wire       vga_hde, vga_vde; // Data Enable signály
-    wire       vga_eol, vga_eof; // Pulzy konca riadku/snímky
+    vga_sync_t sync;   // Finálne sync signály z VGA radiča
+    wire hde, vde, eol, eof;
     wire [LineCounterWidth-1:0] pixel_x, pixel_y; // Súradnice z generátora
 
     // --- Logika pre výber časovacích parametrov (Simulácia vs. Syntéza) ---
@@ -70,36 +73,36 @@ module top (
     end
 `else
     // Pre syntézu (Quartus) použijeme funkciu z balíčka
-	vga_params_t vga_params = get_vga_params(C_VGA_MODE);
-	assign h_line_params = vga_params.h_line;
-	assign v_line_params = vga_params.v_line;
+  vga_params_t vga_params = get_vga_params(C_VGA_MODE);
+  assign h_line_params = vga_params.h_line;
+  assign v_line_params = vga_params.v_line;
 
 `endif
 
     // --- Inštancia VGA radiča (časovanie + dátová cesta) ---
     vga_ctrl vga_inst (
         .clk_i        (pixel_clk),
-        .rst_ni       (pix_rstn_sync),
+        .rst_ni       (rstn_sync),
         .enable_i     (enable), // Radič beží neustále
         .h_line_i     (h_line_params),
         .v_line_i     (v_line_params),
         .fifo_data_i  (generated_data),
         .fifo_empty_i (1'b0), // Zdroj dát (generátor) nie je nikdy prázdny
-        .hde_o        (vga_hde),
-        .vde_o        (vga_vde),
+        .hde_o        (hde),
+        .vde_o        (vde),
         .dat_o        (vga_data_out),
-        .syn_o        (vga_sync_out),
-        .eol_o        (vga_eol),
-        .eof_o        (vga_eof)
+        .syn_o        (sync),
+        .eol_o        (eol),
+        .eof_o        (eof)
     );
 
     // --- Inštancia generátora súradníc ---
     vga_pixel_xy coord_inst (
         .clk_i    (pixel_clk),
-        .rst_ni   (pix_rstn_sync),
+        .rst_ni   (rstn_sync),
         .enable_i (enable),
-        .eol_i    (vga_eol),
-        .eof_i    (vga_eof),
+        .eol_i    (eol),
+        .eof_i    (eof),
         .x_o      (pixel_x),
         .y_o      (pixel_y)
     );
@@ -134,24 +137,68 @@ module top (
     // OPRAVA: Všetky porty sú teraz správne pripojené podľa definície modulu.
     picture_gen image_gen_inst (
         .clk_i    (pixel_clk),
-        .rst_ni   (pix_rstn_sync),
+        .rst_ni   (rstn_sync),
         .enable_i (enable),
         .h_line_i (h_line_params),
         .v_line_i (v_line_params),
         .x_i      (pixel_x),
         .y_i      (pixel_y),
-        .de_i     (vga_hde && vga_vde), // Data Enable je kombinácia H a V
+        .de_i     (hde && vde), // Data Enable je kombinácia H a V
         .mode_i   (BSW[2:0]),  // 3 prepínače určujú režim
         .data_o   (generated_data)
     );
 
 `endif
 
+// HDMI
+  rgb888_t rgb888_data_comb;
+  rgb888_t rgb888_data_reg;
+
+  rgb565_to_rgb888 color_inst (
+    .rgb565_i (generated_data),
+    .rgb888_o (rgb888_data_comb)
+  );
+
+  // Pipeline register pre dáta idúce do HDMI modulu
+  always_ff @(posedge pixel_clk) begin
+    if (!rstn_sync) begin
+      rgb888_data_reg <= '0;
+    end else begin
+      rgb888_data_reg <= rgb888_data_comb;
+    end
+  end
+
+  //============================================================
+  // HDMI Transmitter
+  //============================================================
+  hdmi_tx_top #(
+    .DDRIO(1)
+  ) u_hdmi_tx (
+    .clk_i          (pixel_clk),
+    .clk_x_i        (pixel_clk5),
+    .rst_ni         (rstn_sync),
+
+    .hsync_i        (sync.hs),
+    .vsync_i        (sync.vs),
+
+    .video_i        (rgb888_data_reg), // OPRAVA: Použijeme registrované dáta
+    .video_valid_i  (hde && vde),
+
+    // OPRAVA: Nepoužívané audio/packet vstupy pripojíme na konštantnú nulu
+    .audio_valid_i  (1'b0),
+    .packet_valid_i (1'b0),
+    .audio_i        (tmds_data_t'(0)),
+    .packet_i       (tmds_data_t'(0)),
+
+    // Pripojenie na finálne výstupné porty
+    .hdmi_p_o       (HDMI_P_J11)
+  );
+
     //==========================================================================
     // ==                       PRIRADENIE VÝSTUPOV                          ==
     //==========================================================================
-    assign VGA_HS = vga_sync_out.hs;
-    assign VGA_VS = vga_sync_out.vs;
+    assign VGA_HS = sync.hs;
+    assign VGA_VS = sync.vs;
     assign VGA_R  = vga_data_out.red;
     assign VGA_G  = vga_data_out.grn;
     assign VGA_B  = vga_data_out.blu;
@@ -172,7 +219,7 @@ module top (
         .COMMON_ANODE(1) // alebo 0 pre spoločnú katódu
     ) seg_mux_inst (
         .clk_i(pixel_clk),
-        .rst_ni(pix_rstn_sync),
+        .rst_ni(rstn_sync),
         .digits_i(digits_array),
         .dots_i(dots_array),
         .digit_sel_o(SMG_DIG),
@@ -190,7 +237,7 @@ module top (
         .BLINK_HZ(1)                     // blikanie 1 Hz, môžeš upraviť
     ) blink_inst (
         .clk_i(pixel_clk),
-        .rst_ni(pix_rstn_sync),
+        .rst_ni(rstn_sync),
         .led_o(led0_reg)
     );
 

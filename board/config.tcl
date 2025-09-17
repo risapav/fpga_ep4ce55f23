@@ -20,4 +20,4 @@ set USE_UART            0
 # Use "NONE" if the connector is not used.
 
 set J10_MODULE "NONE"
-set J11_MODULE "NONE"
+set J11_MODULE "HDMI"
