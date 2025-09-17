@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>GradientPattern</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-gradientpattern">Modul <code>GradientPattern</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Generuje AXI4-Stream výstup s farebným gradientom.</p>
+<p>Modul vytvára diagonálny farebný gradient podľa pozície pixelu (x, y).
+Používa vnútorný frame streamer, ktorý generuje súradnice pixelov,
+a kombinačný modul <code>GradientPattern</code>, ktorý vypočíta farbu podľa súčtu x a y.
+Výsledný dátový tok je vystavený ako AXI4-Stream master rozhranie.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: DATA_WIDTH          Šírka dát (počet bitov pre farbu).</li>
+<li><code>[in]</code>: USER_WIDTH          Šírka USER signálu AXI4-Stream.</li>
+<li><code>[in]</code>: ID_WIDTH            Šírka ID signálu AXI4-Stream (ak je využívaný).</li>
+<li><code>[in]</code>: DEST_WIDTH          Šírka DEST signálu AXI4-Stream (ak je využívaný).</li>
+<li><code>[in]</code>: H_RES               Horizontálne rozlíšenie generovaného obrazu (pixely).</li>
+<li><code>[in]</code>: V_RES               Vertikálne rozlíšenie generovaného obrazu (pixely).</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Hodinový signál pre generovanie dát.</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Aktívny nízky asynchrónny reset modulu.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_axis</code></td>
+<td>AXI4-Stream master rozhranie s generovanými dátami.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">axis_gradient_generator #(
+.DATA_WIDTH(16),
+.USER_WIDTH(1),
+.ID_WIDTH(0),
+.DEST_WIDTH(0),
+.H_RES(1024),
+.V_RES(768)
+) u_gradient_gen (
+.clk_i(clk),
+.rst_ni(rstn),
+.m_axis(m_axis_if)
+);
+</code></pre>
+</body>
+</html>
