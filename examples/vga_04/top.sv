@@ -19,10 +19,10 @@ module top (
     //==========================================================================
     // KONFIGURÁCIA VGA režimu
     //==========================================================================
-localparam VGA_mode_e C_VGA_MODE = VGA_1680x1050_60;
+localparam vga_mode_e C_VGA_MODE = VGA_1680x1050_60;
 
 // Zavolajte funkciu iba RAZ a uložte výsledok do konštantnej štruktúry
-localparam VGA_params_t C_VGA_PARAMS = get_vga_params(C_VGA_MODE);
+localparam vga_params_t C_VGA_PARAMS = get_vga_params(C_VGA_MODE);
 
 
     //==========================================================================
@@ -32,7 +32,7 @@ localparam VGA_params_t C_VGA_PARAMS = get_vga_params(C_VGA_MODE);
     logic pll_locked;
     logic pix_rstn_sync;
 
-    ClkPll clkpll_inst (
+    ClkPll ClkPll_inst (
         .inclk0 (SYS_CLK),
         .areset (~RESET_N),
         .c0     (pixel_clk),
@@ -44,25 +44,26 @@ localparam VGA_params_t C_VGA_PARAMS = get_vga_params(C_VGA_MODE);
     //==========================================================================
     // VGA CONTROLLER – zodpovedný za generovanie sync signálov a DE
     //==========================================================================
-    VGA_data_t generated_data, data_out;
-    VGA_sync_t sync_out;
-    logic de;
+    vga_data_t generated_data, data_out;
+    vga_sync_t sync_out;
+    logic de, hde, vde;
     logic vga_line_end, vga_frame_end;
 
-    Vga #(
+    vga_ctrl #(
         .BLANKING_COLOR(YELLOW)
     ) vga_inst (
-        .clk       (pixel_clk),
-        .rstn      (pix_rstn_sync),
-        .enable    (1'b1),  // Vždy povolené
-		.h_line    (C_VGA_PARAMS.h_line),
-		.v_line    (C_VGA_PARAMS.v_line),
-		.data_in   (generated_data),
-        .de        (de),
-        .data_out  (data_out),
-        .sync_out  (sync_out),
-        .line_end  (vga_line_end),
-        .frame_end (vga_frame_end)
+		.clk_i       (pixel_clk),
+		.rst_ni      (pix_rstn_sync),
+		.enable_i    (1'b1),  // Vždy povolené
+		.h_line_i    (C_VGA_PARAMS.h_line),
+		.v_line_i    (C_VGA_PARAMS.v_line),
+		.fifo_data_i   (generated_data),
+		.hde_o (hde),
+		.vde_o (vde),
+		.dat_o (data_out),
+		.syn_o (sync_out),
+		.eol_o (vga_line_end),
+		.eof_o (vga_frame_end)
     );
 
     // Výstup VGA signálov
@@ -75,33 +76,34 @@ localparam VGA_params_t C_VGA_PARAMS = get_vga_params(C_VGA_MODE);
     //==========================================================================
     // GENERÁTOR OBRAZU – výpočet pixelových súradníc a farby
     //==========================================================================
-    logic [TIMING_WIDTH-1:0] pixel_x, pixel_y;
+    logic [LineCounterWidth-1:0] pixel_x, pixel_y;
 
-    PixelCoordinates #(
-        .X_WIDTH(TIMING_WIDTH),
-        .Y_WIDTH(TIMING_WIDTH)
+    vga_pixel_xy #(
+        .MAX_COUNTER_H(MaxPosCounterX),
+        .MAX_COUNTER_V(MaxPosCounterY)
     ) coord_inst (
-        .clk       (pixel_clk),
-        .rstn      (pix_rstn_sync),
-        .de        (de),
-        .line_end  (vga_line_end),
-        .frame_end (vga_frame_end),
-        .x         (pixel_x),
-        .y         (pixel_y)
+        .clk_i		(pixel_clk),
+        .rst_ni   (pix_rstn_sync),
+        .enable_i (hde && vde),
+        .eol_i  	(vga_line_end),
+        .eof_i 	(vga_frame_end),
+        .x_o      (pixel_x),
+        .y_o      (pixel_y)
     );
 
-    ImageGenerator #(
-        .X_WIDTH(TIMING_WIDTH),
-        .Y_WIDTH(TIMING_WIDTH),
-        .MODE_WIDTH(3)
+    picture_gen #(
+        .MAX_COUNTER_H(MaxPosCounterX),
+        .MAX_COUNTER_V(MaxPosCounterY),
+        .MaxModes(8)
     ) image_gen_inst (
-        .clk      (pixel_clk),
-        .rstn     (pix_rstn_sync),
-        .pixel_x  (pixel_x),
-        .pixel_y  (pixel_y),
-        .de       (de),
-        .mode     (BSW[2:0]),  // prepínače určujú režim
-        .data_out (generated_data)
+        .clk_i      (pixel_clk),
+        .rst_ni     (pix_rstn_sync),
+		  .enable_i(1'b1),
+        .x_i  (pixel_x),
+        .y_i  (pixel_y),
+        .de_i (hde && vde),
+        .mode_i     (BSW[2:0]),  // prepínače určujú režim
+        .data_o (generated_data)
     );
 	 
 //assign generated_data = RED;

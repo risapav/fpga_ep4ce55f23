@@ -29,12 +29,12 @@ proc assign_module { port_name module_type } {
         3 "PIN_N1"   9 "PIN_N2"
         4 "PIN_M1"  10 "PIN_M2"
     }
-    
+
     # Select the correct pin array based on the port name
     if {$port_name == "J10"} {
-        upvar PINS_J10 PINS
+        array set PINS [array get PINS_J10]
     } elseif {$port_name == "J11"} {
-        upvar PINS_J11 PINS
+        array set PINS [array get PINS_J11]
     } else {
         post_message -type error "Unknown port name: $port_name"
         return
@@ -42,7 +42,7 @@ proc assign_module { port_name module_type } {
 
     # --- Use a switch statement to select the correct assignment logic ---
     switch -exact -- $module_type {
-    
+
         "LED" {
             post_message "INFO: Assigning 8-bit LED module to $port_name."
             set signal_name "LED_${port_name}"
@@ -72,13 +72,13 @@ proc assign_module { port_name module_type } {
             set_location_assignment $PINS(9) -to "${signal_p_name}[2]"
             set_location_assignment $PINS(10) -to "${signal_p_name}[3]"
         }
-        
+
         # --- ADD NEW MODULES HERE ---
         # "BUTTONS" {
         #    post_message "INFO: Assigning BUTTON module to $port_name."
         #    # ... your assignments for buttons ...
         # }
-        
+
         "NONE" {
             post_message "INFO: $port_name is configured as unused."
         }

@@ -9,4 +9,4 @@ create_clock -name "SYS_CLK" -period 20.0 [get_ports {SYS_CLK}]
 derive_clock_uncertainty
 
 # pixel_clk
-create_generated_clock -name pixel_clk -source [get_ports {SYS_CLK}] -multiply_by 63 -divide_by 125 [get_pins {clkpll_inst|altpll_component|auto_generated|pll1|clk[0]}]
+create_generated_clock -name pixel_clk -source [get_ports {SYS_CLK}] -multiply_by 119 -divide_by 50 [get_pins {clkpll_inst|altpll_component|auto_generated|pll1|clk[0]}]
