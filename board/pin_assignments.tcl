@@ -44,7 +44,7 @@ proc assign_module { port_name module_type } {
     switch -exact -- $module_type {
 
         "LED" {
-            post_message "INFO: Assigning 8-bit LED module to $port_name."
+            post_message "INFO: PMOD_LEDx8 Assigning 8-bit LED module to $port_name."
             set signal_name "LED_${port_name}"
             set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to "${signal_name}[7..0]"
             set_location_assignment $PINS(1) -to "${signal_name}[0]"
@@ -58,19 +58,33 @@ proc assign_module { port_name module_type } {
         }
 
         "HDMI" {
-            post_message "INFO: Assigning HDMI module to $port_name."
+            post_message "INFO: PMOD_DVI Assigning HDMI module to $port_name."
             set signal_p_name "HDMI_P_${port_name}"
 #            set signal_n_name "HDMI_N_${port_name}"
             set_instance_assignment -name IO_STANDARD "LVDS" -to "${signal_p_name}[3..0]"
 #            set_instance_assignment -name IO_STANDARD "LVDS" -to "${signal_n_name}[3..0]"
-#            set_location_assignment $PINS(1) -to "${signal_n_name}[0]"
+#            set_location_assignment $PINS(1) -to "${signal_n_name}[2]"
 #            set_location_assignment $PINS(2) -to "${signal_n_name}[1]"
-#            set_location_assignment $PINS(3) -to "${signal_n_name}[2]"
+#            set_location_assignment $PINS(3) -to "${signal_n_name}[0]"
 #            set_location_assignment $PINS(4) -to "${signal_n_name}[3]"
-            set_location_assignment $PINS(7) -to "${signal_p_name}[0]"
+            set_location_assignment $PINS(7) -to "${signal_p_name}[2]"
             set_location_assignment $PINS(8) -to "${signal_p_name}[1]"
-            set_location_assignment $PINS(9) -to "${signal_p_name}[2]"
+            set_location_assignment $PINS(9) -to "${signal_p_name}[0]"
             set_location_assignment $PINS(10) -to "${signal_p_name}[3]"
+        }
+
+        "SEG7" {
+            post_message "INFO: PMOD_DTx2 Assigning 8-bit 7 SEGMENT module to $port_name."
+            set signal_name "SEG7_${port_name}"
+            set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to "${signal_name}[7..0]"
+            set_location_assignment $PINS(1) -to "${signal_name}[0]"
+            set_location_assignment $PINS(2) -to "${signal_name}[1]"
+            set_location_assignment $PINS(3) -to "${signal_name}[2]"
+            set_location_assignment $PINS(4) -to "${signal_name}[3]"
+            set_location_assignment $PINS(7) -to "${signal_name}[4]"
+            set_location_assignment $PINS(8) -to "${signal_name}[5]"
+            set_location_assignment $PINS(9) -to "${signal_name}[6]"
+            set_location_assignment $PINS(10) -to "${signal_name}[7]"
         }
 
         # --- ADD NEW MODULES HERE ---
