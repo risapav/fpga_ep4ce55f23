@@ -11,10 +11,34 @@
 #
 # ========================================================================== #
 
-
 # Procedure to assign pins for a given connector and module type
 # This makes the code reusable and clean.
 proc assign_module { port_name module_type } {
+
+    # -------------------------------------------------------------------------- #
+    #                     *** VALIDATION BLOCK ***
+    # -------------------------------------------------------------------------- #
+    # This section checks for known hardware limitations before attempting
+    # to assign any pins.
+
+    # KONTROLA 1: HDMI modul vyžaduje LVDS piny, ktoré sú len na J11.
+    if { [string compare -nocase $module_type "HDMI"] == 0 && \
+          [string compare -nocase $port_name "J10"] == 0 } {
+
+        # Vypíš zrozumiteľnú chybu a zastav kompiláciu
+        post_message -type error "INVALID CONFIGURATION: Attempted to assign HDMI module to connector J10."
+        post_message -type error "REASON: The FPGA pins for J10 do not support the required LVDS I/O standard for HDMI."
+        post_message -type error "SOLUTION: Please assign the HDMI module to a compatible connector (e.g., J11) in your project.qsf file."
+
+        # Ukončí procedúru a vráti chybový stav, čo zastaví ďalšie spracovanie
+        return -code error
+    }
+
+    # Tu môžete v budúcnosti pridať ďalšie kontroly pre iné moduly...
+
+    # -------------------------------------------------------------------------- #
+    #                  *** PIN DEFINITIONS AND ASSIGNMENTS ***
+    # -------------------------------------------------------------------------- #
 
     # --- Define physical pins for each connector ---
     array set PINS_J10 {
@@ -58,18 +82,20 @@ proc assign_module { port_name module_type } {
         }
 
         "HDMI" {
-            post_message "INFO: PMOD_DVI Assigning HDMI module to $port_name."
+            post_message "INFO: PMOD_DVI: Assigning HDMI module to $port_name."
             set signal_p_name "HDMI_P_${port_name}"
-#            set signal_n_name "HDMI_N_${port_name}"
             set_instance_assignment -name IO_STANDARD "LVDS" -to "${signal_p_name}[3..0]"
-#            set_instance_assignment -name IO_STANDARD "LVDS" -to "${signal_n_name}[3..0]"
-#            set_location_assignment $PINS(1) -to "${signal_n_name}[2]"
-#            set_location_assignment $PINS(2) -to "${signal_n_name}[1]"
-#            set_location_assignment $PINS(3) -to "${signal_n_name}[0]"
-#            set_location_assignment $PINS(4) -to "${signal_n_name}[3]"
+
+            # NOTE: Only positive pins of LVDS pairs are assigned.
+            # The Quartus Fitter will automatically assign the corresponding negative pins.
+
+            # Differential Pair for Red Channel
             set_location_assignment $PINS(7) -to "${signal_p_name}[2]"
+            # Differential Pair for Green Channel
             set_location_assignment $PINS(8) -to "${signal_p_name}[1]"
+            # Differential Pair for Blue Channel
             set_location_assignment $PINS(9) -to "${signal_p_name}[0]"
+            # Differential Pair for Clock Channel
             set_location_assignment $PINS(10) -to "${signal_p_name}[3]"
         }
 

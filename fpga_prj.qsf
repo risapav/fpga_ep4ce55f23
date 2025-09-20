@@ -112,11 +112,20 @@ set_global_assignment -name VERILOG_MACRO "USE_VGA=1"
 
 # --- Step 2: Source the dynamic peripheral assignment library ---
 source board/pin_assignments.tcl
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SEG7_J10[7..0]
+set_location_assignment PIN_H1 -to SEG7_J10[0]
+set_location_assignment PIN_F1 -to SEG7_J10[1]
+set_location_assignment PIN_E1 -to SEG7_J10[2]
+set_location_assignment PIN_C1 -to SEG7_J10[3]
+set_location_assignment PIN_H2 -to SEG7_J10[4]
+set_location_assignment PIN_F2 -to SEG7_J10[5]
+set_location_assignment PIN_D2 -to SEG7_J10[6]
+set_location_assignment PIN_C2 -to SEG7_J10[7]
+set_instance_assignment -name IO_STANDARD LVDS -to HDMI_P_J11[3..0]
 set_location_assignment PIN_R2 -to HDMI_P_J11[2]
 set_location_assignment PIN_P2 -to HDMI_P_J11[1]
 set_location_assignment PIN_N2 -to HDMI_P_J11[0]
 set_location_assignment PIN_M2 -to HDMI_P_J11[3]
-set_instance_assignment -name IO_STANDARD LVDS -to HDMI_P_J11[3..0]
 
 
 # ----------------------------------------------------------------------------
@@ -153,4 +162,18 @@ set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/vga_pixel_xy.sv
 set_global_assignment -name SYSTEMVERILOG_FILE top.sv
 set_global_assignment -name QIP_FILE cores/ClkPll.qip
 set_global_assignment -name QIP_FILE cores/ddio_out.qip
+set_instance_assignment -name IO_STANDARD LVDS -to HDMI_P_J10[3..0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SEG7_J11[7..0]
+set_location_assignment PIN_D2 -to HDMI_P_J10[0]
+set_location_assignment PIN_F2 -to HDMI_P_J10[1]
+set_location_assignment PIN_H2 -to HDMI_P_J10[2]
+set_location_assignment PIN_C2 -to HDMI_P_J10[3]
+set_location_assignment PIN_R1 -to SEG7_J11[0]
+set_location_assignment PIN_P1 -to SEG7_J11[1]
+set_location_assignment PIN_N1 -to SEG7_J11[2]
+set_location_assignment PIN_M1 -to SEG7_J11[3]
+set_location_assignment PIN_R2 -to SEG7_J11[4]
+set_location_assignment PIN_P2 -to SEG7_J11[5]
+set_location_assignment PIN_N2 -to SEG7_J11[6]
+set_location_assignment PIN_M2 -to SEG7_J11[7]
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

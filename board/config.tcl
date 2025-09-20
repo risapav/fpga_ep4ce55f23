@@ -21,3 +21,4 @@ set USE_UART            0
 
 set J10_MODULE "SEG7"
 set J11_MODULE "HDMI"
+
