@@ -18,6 +18,18 @@ module top (
 
     output logic [7:0] SEG7_J10,
 
+    inout logic [15:0] DRAM_DQ,
+    output logic [12:0] DRAM_ADDR,
+    output logic [1:0] DRAM_BA,
+    output logic DRAM_CAS_N,
+    output logic DRAM_CKE,
+    //  DRAM_CLK
+    output logic DRAM_CS_N,
+    output logic DRAM_WE_N,
+    output logic DRAM_RAS_N,
+    output logic DRAM_UDQM,
+    output logic DRAM_LDQM,
+
     output logic [3:0] HDMI_P_J11
 );
 

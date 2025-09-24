@@ -9,7 +9,7 @@ set USE_7_SEG_DISPLAY   1
 set USE_LEDS            1
 set USE_BUTTONS         1
 set USE_VGA             1  ;# VGA v tomto projekte nepoužívame
-set USE_SDRAM           0  ;# SDRAM v tomto projekte nepoužívame
+set USE_SDRAM           1  ;# SDRAM v tomto projekte nepoužívame
 set USE_UART            0
 
 # -------------------------------------------------------------------------- #
