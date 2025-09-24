@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>CheckerPattern</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-checkerpattern">Modul <code>CheckerPattern</code></h1>
+<h2 id="popis">Popis</h2>
+<p>AXI4-Stream generátor šachovnicového vzoru (checkerboard pattern)</p>
+<p>Modul <code>axis_checker_generator</code> generuje statický šachovnicový obrazec s definovateľným rozlíšením,
+šírkou a výškou buniek pomocou submodulu <code>CheckerPattern</code>. Dáta sú posielané cez AXI4-Stream rozhranie
+v štandarde RGB565. Modul generuje obrazce na základe súradníc (X,Y) získaných z modulu
+<code>axis_frame_streamer</code>, ktorý zabezpečuje správne načasovanie pixelových pozícií.</p>
+<p>Vznikajúci obrazec je ideálny na testovanie a overovanie funkčnosti zobrazovacích ciest (napr. VGA, HDMI),
+ako aj diagnostiku problémov s časovaním alebo FIFO podtečením.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: DATA_WIDTH         Šírka dátového poľa v AXI4-Stream (bitov) – typicky 16 pre RGB565.</li>
+<li><code>[in]</code>: USER_WIDTH         Šírka TUSER signálu v AXI4-Stream rozhraní.</li>
+<li><code>[in]</code>: ID_WIDTH           Šírka TID signálu (identifikácia) v AXI4-Stream.</li>
+<li><code>[in]</code>: DEST_WIDTH         Šírka TDEST signálu v AXI4-Stream.</li>
+<li><code>[in]</code>: H_RES              Horizontálne rozlíšenie (pixelov na riadok).</li>
+<li><code>[in]</code>: V_RES              Vertikálne rozlíšenie (počet riadkov).</li>
+<li><code>[in]</code>: COUNTER_WIDTH      Šírka počítadiel pre X/Y – odvodená z H_RES ako $clog2(H_RES).</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Vstupný hodinový signál (pixel clock).</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Asynchrónny reset, aktívny v L.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>m_axis</code></td>
+<td>Výstupné AXI4-Stream rozhranie, obsahujúce šachovnicový obrazec.</td>
+</tr>
+<tr>
+<td>Polia: TVALID, TDATA (RGB565), TLAST, TUSER, TREADY.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">Názorný príklad použitia:
+axis_checker_generator #(
+.H_RES(800),
+.V_RES(600),
+.DATA_WIDTH(16),
+.USER_WIDTH(1)
+) u_checker (
+.clk_i(clk),
+.rst_ni(rst_n),
+.m_axis(m_axi_checker)
+);
+</code></pre>
+</body>
+</html>
