@@ -1,9 +1,12 @@
 `ifndef SDRAM_PKG_DONE
 `define SDRAM_PKG_DONE
 
+(* default_nettype = "none" *)
+
 package sdram_pkg;
   parameter int ADDR_WIDTH = 24;
   parameter int DATA_WIDTH = 16;
+  parameter int BURST_LEN  = 8;
 
   typedef enum logic {
     WRITE_CMD = 1'b0,

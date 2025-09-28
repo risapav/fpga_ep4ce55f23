@@ -66,7 +66,7 @@ module cdc_async_fifo #(
   parameter int unsigned ALMOST_FULL_THRESHOLD  = 16,
   parameter int unsigned ALMOST_EMPTY_THRESHOLD = 16,
   // Počet bitov potrebných pre adresovanie hĺbky FIFO
-  parameter int unsigned ADDR_WIDTH = $clog2(DEPTH);
+  parameter int unsigned ADDR_WIDTH = $clog2(DEPTH)
 )(
   // Zápisová doména (write clock domain)
   input  logic               wr_clk_i,
@@ -151,7 +151,7 @@ module cdc_async_fifo #(
 
   // Synchronizácia čítacieho pointera do zápisovej domény
   cdc_two_flop_synchronizer #(.WIDTH(ADDR_WIDTH + 1)) rd_ptr_sync_inst (
-    .clk_i(wr_clk_i), .rst_ni(wr_rstn_sync), .d(rd_ptr_gray), .q(rd_ptr_gray_wrclk_sync)
+    .clk_i(wr_clk_i), .rst_ni(wr_rstn_sync), .d_i(rd_ptr_gray), .q_o(rd_ptr_gray_wrclk_sync)
   );
 
   // Prevod synchronizovaného gray pointera na binárny pre výpočty
@@ -189,7 +189,7 @@ module cdc_async_fifo #(
 
   // Synchronizácia zápisového pointera do čítacej domény
   cdc_two_flop_synchronizer #(.WIDTH(ADDR_WIDTH + 1)) wr_ptr_sync_inst (
-    .clk_i(rd_clk_i), .rst_ni(rd_rstn_sync), .d(wr_ptr_gray), .q(wr_ptr_gray_rdclk_sync)
+    .clk_i(rd_clk_i), .rst_ni(rd_rstn_sync), .d_i(wr_ptr_gray), .q_o(wr_ptr_gray_rdclk_sync)
   );
 
   // Prevod synchronizovaného gray pointera na binárny pre výpočty

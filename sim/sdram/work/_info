@@ -1,0 +1,268 @@
+m255
+K4
+z2
+!s11f vlog 2024.3 2024.09, Sep 10 2024
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 d/home/palo/Documents/fpga_ep4ce55f23/sim/sdram
+vcdc_async_fifo
+2/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv
+Z1 DXx6 sv_std 3 std 0 22 9oUSJO;AeEaW`l:M@^WG92
+Z2 !s110 1759084373
+!i10b 1
+!s100 C_:SBZ<zk?ml7mP@AF67E2
+IeKKg;KiDmliPf7:4L_o>J3
+S1
+R0
+w1758978481
+8/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv
+F/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv
+!i122 2
+L0 63 144
+Z3 VDg1SIo80bB@j0V0VzS_@n1
+Z4 OL;L;2024.3;79
+r1
+!s85 0
+31
+Z5 !s108 1759084373.000000
+!s107 /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv|
+!i113 0
+Z6 o-work work -sv +acc -L mtiAvm -L mtiRnm -L mtiOvm -L mtiUvm -L mtiUPF -L infact
+Z7 tSvlog 1 CvgOpt 0
+vcdc_reset_synchronizer
+2/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv
+R1
+R2
+!i10b 1
+!s100 _faA]YIj6N36jm3J<hU@J3
+IYz?VPXDLCELI7Qd8idzM>2
+S1
+R0
+w1758977335
+8/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv
+F/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv
+!i122 0
+L0 25 17
+R3
+R4
+r1
+!s85 0
+31
+R5
+!s107 /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv|
+!i113 0
+R6
+R7
+vcdc_two_flop_synchronizer
+2/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv
+R1
+R2
+!i10b 1
+!s100 ho=FkMHdDm6zJE=BcaC083
+IAC=lWOAidgL^VMEDSEA?E1
+S1
+R0
+w1758977332
+8/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv
+F/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv
+!i122 1
+L0 30 31
+R3
+R4
+r1
+!s85 0
+31
+R5
+!s107 /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv|
+!i113 0
+R6
+R7
+vgeneric_sdram
+2/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v
+R1
+R2
+!i10b 1
+!s100 jU[8bHFQW5<N2]7O:mC9i3
+Ij<iY7ID0QkDNbak^^9=o`3
+S1
+R0
+w1759077270
+8/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v
+F/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v
+!i122 3
+L0 10 207
+R3
+R4
+r1
+!s85 0
+31
+R5
+!s107 /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v|
+!s90 -reportprogress|300|-work|work|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v|
+!i113 0
+o-work work +acc -L mtiAvm -L mtiRnm -L mtiOvm -L mtiUvm -L mtiUPF -L infact
+R7
+Xsdram_pkg
+Z8 2/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv
+R1
+Z9 !s110 1759084374
+!i10b 1
+!s100 DbGJKdDJJLh<DgC_a0QN21
+I<fXQb@;SNCiKTOV4JFed;2
+S1
+R0
+Z10 w1758977674
+8/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv
+F/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv
+!i122 7
+L0 6 0
+V<fXQb@;SNCiKTOV4JFed;2
+R4
+r1
+!s85 0
+31
+Z11 !s108 1759084374.000000
+Z12 !s107 /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv|
+Z13 !s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv|
+!i113 0
+R6
+R7
+vSdramCmdArbiter
+2/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv
+R1
+Z14 DXx4 work 9 sdram_pkg 0 22 <fXQb@;SNCiKTOV4JFed;2
+R2
+!i10b 1
+!s100 KgX;fgP@j^jS[iX:1WX3H2
+IOzNPLPn_3Kh=<N5W1?]LU3
+S1
+R0
+R10
+8/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv
+F/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv
+!i122 5
+L0 11 143
+R3
+R4
+r1
+!s85 0
+31
+R5
+!s107 /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv|
+!i113 0
+R6
+R7
+n@sdram@cmd@arbiter
+vSdramController
+2/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv
+R1
+R14
+R9
+!i10b 1
+!s100 X71ad^QPe6W?@ASg0I]ee0
+I0J5oQFAni[gKkLJDD<oPH3
+S1
+R0
+w1759084183
+8/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv
+F/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv
+!i122 6
+L0 16 251
+R3
+R4
+r1
+!s85 0
+31
+R11
+!s107 /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv|
+!i113 0
+R6
+R7
+n@sdram@controller
+vSdramDriver
+R8
+R1
+R14
+R9
+!i10b 1
+!s100 BIST;>9AjIi=PkHDM_3Fc2
+IOkeLa=1KD;lU<LmP<;4XG3
+S1
+R0
+R10
+8/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv
+F/home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv
+!i122 7
+L0 19 223
+R3
+R4
+r1
+!s85 0
+31
+R11
+R12
+R13
+!i113 0
+R6
+R7
+n@sdram@driver
+vSimpleSdramTester
+2/home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv
+R1
+R9
+!i10b 1
+!s100 BBo?iE]o8WgW4nRS:?il93
+IkObOOZT=hOGDeVF7ZKl@F2
+S1
+R0
+w1759072685
+8/home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv
+F/home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv
+!i122 8
+L0 4 112
+R3
+R4
+r1
+!s85 0
+31
+R11
+!s107 /home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv|
+!i113 0
+R6
+R7
+n@simple@sdram@tester
+vtb_sdram_core
+2/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv
+R1
+R9
+!i10b 1
+!s100 Ce;M73JTWJ:zJ8HonP>hg3
+Ib_2zE]AFo8>NfR7`K]E<81
+S1
+R0
+w1759071373
+8/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv
+F/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv
+!i122 9
+L0 5 86
+R3
+R4
+r1
+!s85 0
+31
+R11
+!s107 /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv|
+!s90 -reportprogress|300|-work|work|-sv|-vopt|+acc|/home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv|
+!i113 0
+R6
+R7

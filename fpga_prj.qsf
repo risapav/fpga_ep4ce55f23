@@ -54,27 +54,18 @@ set_global_assignment -name EDA_USER_COMPILED_SIMULATION_LIBRARY_DIRECTORY /home
 # SystemVerilog Top-Level Design
 # ----------------------------------------------------------------------------
 set_global_assignment -name TOP_LEVEL_ENTITY top
-
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
+set_global_assignment -name SYSTEMVERILOG_FILE src/utils/seven_seg_decoder.sv
+set_global_assignment -name SDC_FILE fpga_prj.sdc
+set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/simple_sdram_tester.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/cdc/cdc_async_fifo.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/cdc/cdc_reset_synchronizer.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/cdc/cdc_two_flop_synchronizer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_arbiter.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_ctrl.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_driver.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_pkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE src/framebuffer/framebuffer.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/vga_pkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/hdmi/hdmi_pkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/rgb565_to_rgb888.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/hdmi/tmds_encoder_pipelined.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/hdmi/packet_streamer.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/hdmi/infoframe_builder.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/hdmi/hdmi_tx_top.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/hdmi/generic_serializer.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/picture/picture_gen.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/utils/seven_seg_mux.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/utils/blink_led.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/vga_timing.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/vga_line.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/vga_ctrl.sv
-set_global_assignment -name SYSTEMVERILOG_FILE common/src/vga/vga_pixel_xy.sv
 set_global_assignment -name SYSTEMVERILOG_FILE top.sv
 set_global_assignment -name QIP_FILE cores/ClkPll.qip
 set_global_assignment -name QIP_FILE cores/ddio_out.qip

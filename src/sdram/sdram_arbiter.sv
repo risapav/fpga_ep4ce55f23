@@ -1,47 +1,35 @@
-// sdram_arbiter.sv - Prepracovaný a opravený SDRAM Arbiter
+// sdram_arbiter.sv - Refaktorovaná verzia 3.1
+// - Zjednodušené názvy signálov, odstránený mŕtvy kód.
+// - Použité SystemVerilog Assertions (SVA) pre robustnejšiu verifikáciu.
 //
-// Verzia 2.0 - Opravy a vylepšenia
-//
-// Kľúčové zmeny:
-// 1. OPRAVA (Koncepčná): Arbiter už negeneruje dávky príkazov. Namiesto toho
-//    vyberie jedného žiadateľa a pošle JEDEN príkaz pre celú burst transakciu
-//    do SDRAM radiča, čím správne využíva jeho burst schopnosti.
-// 2. OPRAVA (Logika): Implementovaný plne funkčný handshake pre zápis dát.
-//    Arbiter prejde do stavu S_FILL_WBUF, kde čaká na všetky dáta od writera
-//    predtým, ako pošle príkaz radiču.
-// 3. VYLEPŠENIE (Výkon): Pevná priorita bola nahradená spravodlivou Round-Robin
-//    arbitrážou, aby sa zabránilo hladovaniu (starvation) jedného zo žiadateľov.
-// 4. VYLEPŠENIE (Čitateľnosť): Stavový automat (FSM) bol kompletne prepracovaný,
-//    aby bol jednoduchší, robustnejší a ľahšie pochopiteľný.
-// 5. VYLEPŠENIE (Integrácia): Pridaná pevná politika pre auto-precharge, aby
-//    sa zjednodušila logika a maximalizoval výkon radiča.
+// Author: refactor by assistant
 
 `include "sdram_pkg.sv"
+
+(* default_nettype = "none" *)
 
 module SdramCmdArbiter #(
     parameter ADDR_WIDTH = 24,
     parameter DATA_WIDTH = 16,
-    parameter BURST_LEN  = 8
+    parameter BURST_LEN  = 8,
+
+    parameter string PRIORITY_MODE = "ROUND_ROBIN",
+    parameter bit REGISTER_OUTPUTS = 0
 )(
     input  logic                   clk,
     input  logic                   rstn,
 
-    // -- Rozhranie pre žiadateľa o čítanie (Reader)
+    // Reader interface
     input  logic                   reader_valid,
     output logic                   reader_ready,
     input  logic [ADDR_WIDTH-1:0]  reader_addr,
 
-    // -- Rozhranie pre žiadateľa o zápis (Writer)
+    // Writer interface
     input  logic                   writer_valid,
     output logic                   writer_ready,
     input  logic [ADDR_WIDTH-1:0]  writer_addr,
-    // POZNÁMKA: Writer už neposiela dáta priamo sem.
-    // Dáta sa posielajú do wdata_fifo radiča. Tento arbiter
-    // len generuje príkaz. Pre zjednodušenie tu nechávame
-    // staré rozhranie, ale v reálnom dizajne by sa to prepojilo
-    // na spoločné wdata_fifo.
 
-    // -- Rozhranie do príkazového FIFO SDRAM radiča
+    // Command FIFO towards controller
     output logic                   cmd_fifo_valid,
     input  logic                   cmd_fifo_ready,
     output sdram_pkg::sdram_cmd_t  cmd_fifo_data
@@ -49,110 +37,117 @@ module SdramCmdArbiter #(
 
     import sdram_pkg::*;
 
-    // -- Stavy FSM
-    typedef enum logic [1:0] {
-        S_IDLE,         // Čaká na požiadavky a rozhoduje
-        S_SEND_CMD,     // Posiela vybraný príkaz do radiča
-        S_FILL_WBUF     // Plní interný buffer dátami od writera (v tomto zjednodušenom príklade)
-    } state_t;
+    // -- Interné signály --
+    logic grant_reader, grant_writer; // Zjednodušené názvy pre kombinačné signály
+    logic prio_is_reader_reg;
+    logic can_transfer_reader, can_transfer_writer;
 
-    state_t state, next_state;
-
-    // -- Logika pre Round-Robin arbitráž
-    logic prio_is_reader; // 1: Reader má prioritu, 0: Writer má prioritu
-
-    // -- Register na uloženie vybraného príkazu
-    sdram_cmd_t selected_cmd;
-	 
-    // -- Interné signály pre výber požiadaviek
-    logic reader_selected;
-    logic writer_selected;	 
+    // Interné (pred-registrové) verzie výstupov
+    logic reader_ready_int, writer_ready_int, cmd_fifo_valid_int;
+    sdram_pkg::sdram_cmd_t cmd_fifo_data_int;
 
     //================================================================
-    // Sekvenčná logika
+    // Logika pre Round-Robin prioritu (registrovaná)
     //================================================================
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rstn) begin
         if (!rstn) begin
-            state <= S_IDLE;
-            prio_is_reader <= 1'b1; // Defaultne začína s prioritou pre readera
+            prio_is_reader_reg <= 1'b1; // Defaultne začína s prioritou pre readera
         end else begin
-            state <= next_state;
-
-            // Logika pre zmenu priority v Round-Robin schéme
-            if ((state == S_SEND_CMD) && cmd_fifo_valid && cmd_fifo_ready) begin
-                // Po úspešnom odoslaní príkazu prehodíme prioritu
-                prio_is_reader <= ~prio_is_reader;
+            // Priorita sa preklopí, len ak došlo k úspešnému prenosu
+            if (can_transfer_reader || can_transfer_writer) begin
+                // A len ak sme v Round-Robin režime
+                if (PRIORITY_MODE == "ROUND_ROBIN") begin
+                    prio_is_reader_reg <= ~prio_is_reader_reg;
+                end
             end
         end
     end
 
     //================================================================
-    // Kombinačná logika
+    // Kombinačná logika arbitráže
     //================================================================
     always_comb begin
-        // Defaultné hodnoty
-        next_state = state;
-        reader_ready = 1'b0;
-        writer_ready = 1'b0;
-        cmd_fifo_valid = 1'b0;
-        cmd_fifo_data = '0;
+        // -- Defaultné hodnoty --
+        grant_reader = 1'b0;
+        grant_writer = 1'b0;
 
-        if (prio_is_reader) begin
-            // Reader má prioritu
-            reader_selected = reader_valid;
-            writer_selected = ~reader_valid && writer_valid;
-        end else begin
-            // Writer má prioritu
-            writer_selected = writer_valid;
-            reader_selected = ~writer_valid && reader_valid;
+        // -- 1. Krok: Arbitráž - Určenie víťaza na základe priority --
+        if (PRIORITY_MODE == "FIXED_READER") begin
+            grant_reader = reader_valid;
+            grant_writer = ~reader_valid && writer_valid;
+        end else if (PRIORITY_MODE == "FIXED_WRITER") begin
+            grant_writer = writer_valid;
+            grant_reader = ~writer_valid && reader_valid;
+        end else begin // ROUND_ROBIN
+            if (prio_is_reader_reg) begin
+                grant_reader = reader_valid;
+                grant_writer = ~reader_valid && writer_valid;
+            end else begin
+                grant_writer = writer_valid;
+                grant_reader = ~writer_valid && reader_valid;
+            end
         end
 
-        // -- Hlavný stavový automat
-        case (state)
-            S_IDLE: begin
-                // Ak je vybraný nejaký žiadateľ a sme pripravení poslať príkaz
-                if (reader_selected || writer_selected) begin
-                    if (reader_selected) begin
-                        // Zostavíme príkaz na ČÍTANIE
-                        selected_cmd.rw   = READ_CMD;
-                        selected_cmd.addr = reader_addr;
-                        selected_cmd.auto_precharge_en = 1'b1; // Použijeme auto-precharge
-                        reader_ready      = 1'b1; // Dáme vedieť readerovi, že sme prijali jeho požiadavku
-                        next_state        = S_SEND_CMD;
-                    end
-                    else if (writer_selected) begin
-                        // Zostavíme príkaz na ZÁPIS
-                        selected_cmd.rw   = WRITE_CMD;
-                        selected_cmd.addr = writer_addr;
-                        selected_cmd.auto_precharge_en = 1'b1; // Použijeme auto-precharge
-                        writer_ready      = 1'b1; // Dáme vedieť writerovi, že sme prijali jeho požiadavku
-                        // V reálnom dizajne by sme tu prešli do stavu plnenia wdata FIFO.
-                        // Pre jednoduchosť prejdeme priamo na poslanie príkazu.
-                        // Predpokladá sa, že aplikačná logika naplní wdata FIFO radiča včas.
-                        next_state        = S_SEND_CMD;
-                    end
-                end
-            end
+        // -- 2. Krok: Handshake - Zistenie, či je možný okamžitý prenos --
+        can_transfer_reader = grant_reader && cmd_fifo_ready;
+        can_transfer_writer = grant_writer && cmd_fifo_ready;
 
-            S_SEND_CMD: begin
-                // Posielame pripravený príkaz do SDRAM radiča
-                cmd_fifo_valid = 1'b1;
-                cmd_fifo_data  = selected_cmd;
+        // -- 3. Krok: Priradenie `ready` signálov --
+        reader_ready_int = can_transfer_reader;
+        writer_ready_int = can_transfer_writer;
 
-                if (cmd_fifo_ready) begin
-                    // Radič prijal príkaz, môžeme sa vrátiť do IDLE a čakať na ďalšie
-                    next_state = S_IDLE;
-                end
-            end
+        // -- 4. Krok: Zostavenie výstupného príkazu --
+        cmd_fifo_valid_int = can_transfer_reader || can_transfer_writer;
 
-            // POZNÁMKA: Stav S_FILL_WBUF by bol potrebný v dizajne, kde arbiter
-            // má vlastný write buffer. V tomto zjednodušenom modeli sa spoliehame,
-            // že aplikačná logika priamo komunikuje s wdata_fifo v SDRAM radiči.
+        if (can_transfer_reader) begin
+            cmd_fifo_data_int.rw   = READ_CMD;
+            cmd_fifo_data_int.addr = reader_addr;
+        end else if (can_transfer_writer) begin
+            cmd_fifo_data_int.rw   = WRITE_CMD;
+            cmd_fifo_data_int.addr = writer_addr;
+        end else begin
+            // Pre predvídateľnosť nastavíme defaultné hodnoty
+            cmd_fifo_data_int.rw   = READ_CMD; // ľubovoľná hodnota
+            cmd_fifo_data_int.addr = '0;
+        end
 
-            default: begin
-                next_state = S_IDLE;
-            end
-        endcase
+        // Spoločné polia príkazu
+        cmd_fifo_data_int.wdata = '0; // Arbiter nerieši dáta
+        cmd_fifo_data_int.auto_precharge_en = 1'b1; // Politika: vždy použiť pre výkon
     end
+
+    //================================================================
+    // Voliteľné registrovanie výstupov
+    //================================================================
+    generate
+        if (REGISTER_OUTPUTS) begin : gen_reg_outputs
+            always_ff @(posedge clk or negedge rstn) begin
+                if (!rstn) begin
+                    cmd_fifo_valid <= 1'b0;
+                    cmd_fifo_data  <= '0;
+                    reader_ready   <= 1'b0;
+                    writer_ready   <= 1'b0;
+                end else begin
+                    cmd_fifo_valid <= cmd_fifo_valid_int;
+                    cmd_fifo_data  <= cmd_fifo_data_int;
+                    reader_ready   <= reader_ready_int;
+                    writer_ready   <= writer_ready_int;
+                end
+            end
+        end else begin : gen_comb_outputs
+            // Priame kombinačné priradenie pre najnižšiu latenciu
+            assign cmd_fifo_valid = cmd_fifo_valid_int;
+            assign cmd_fifo_data  = cmd_fifo_data_int;
+            assign reader_ready   = reader_ready_int;
+            assign writer_ready   = writer_ready_int;
+        end
+    endgenerate
+
+    //================================================================
+    // Verifikačné asercie (SVA)
+    //================================================================
+    // SVA: Zabezpečí, že nikdy nebudú obaja žiadatelia obslúžení naraz.
+    CheckBothReady: assert property (@(posedge clk) !(reader_ready && writer_ready)) else
+        $error("[%0t] SVA FAIL @ %m: Both reader_ready and writer_ready asserted!", $time);
 
 endmodule

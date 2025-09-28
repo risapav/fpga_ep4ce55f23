@@ -19,6 +19,6 @@ set USE_UART            0
 # Supported modules: "LED", "HDMI", "BUTTONS", "SEG7", etc.
 # Use "NONE" if the connector is not used.
 
-set J10_MODULE "SEG7"
-set J11_MODULE "HDMI"
+set J10_MODULE "NONE"
+set J11_MODULE "NONE"
 

@@ -5,16 +5,16 @@
 // Popis: Modul na riadenie dvojitého framebufferu s AXI rozhraním k SDRAM
 //         Podporuje režimy 800x600 @60Hz, 640x480 @60Hz
 //         a jednoduché FIFO pre line buffer
-// Verzia: 1.0
-// Dátum: 2024-06-15
+// Verzia: 1.1 - Refaktoring a oprava chýb
+// Dátum: 2025-09-26
 module FramebufferController #(
     parameter H_RES = 800,
     parameter V_RES = 600,
     parameter FB0_BASE_ADDR = 24'h000000,
     parameter FB1_BASE_ADDR = 24'h080000
 )(
-    input  logic clk, // Predpokladáme jednu hodinovú doménu (clk_axi z Drivera)
-    input  logic rstn,
+    input  logic clk_i, // Predpokladáme jednu hodinovú doménu (clk_axi z Drivera)
+    input  logic rst_ni,
 
     // --- Rozhranie pre vstup pixelov (od zdroja obrazu) ---
     input  logic             pixel_in_valid_i,
@@ -55,6 +55,7 @@ module FramebufferController #(
 
     // --- Konštanty ---
     localparam FRAME_SIZE = H_RES * V_RES;
+    // VYLEPŠENIE: Použitie importovaného BURST_LEN z balíčka sdram_pkg
     localparam int NUM_WRITE_BURSTS = (FRAME_SIZE + BURST_LEN - 1) / BURST_LEN;
 
     localparam LINE_BUFFER_DEPTH = H_RES * 2; // Buffer na 2 riadky pre bezpečnosť
@@ -69,11 +70,13 @@ module FramebufferController #(
         fb_base_addr[1] = FB1_BASE_ADDR;
     end
 
-    always_ff @(posedge clk or negedge rstn) begin
-        if (!rstn) front_buffer_idx <= 1'b0;
-        else if (ctrl_swap_buffers_i) front_buffer_idx <= ~front_buffer_idx;
+    // OPRAVA: Použité správne názvy portov clk_i a rst_ni
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) front_buffer_idx <= 1'b0;
+//        else if (ctrl_swap_buffers_i) front_buffer_idx <= ~front_buffer_idx;
     end
-    assign back_buffer_addr = fb_base_addr[~front_buffer_idx];
+    assign back_buffer_addr = fb_base_addr[0];
+//    assign back_buffer_addr = fb_base_addr[~front_buffer_idx];
 
     //================================================================
     // Zapisovacia Cesta (Plnenie Back Buffera)
@@ -84,8 +87,9 @@ module FramebufferController #(
     logic [$clog2(BURST_LEN)-1:0]     wr_data_count;
 
     // --- Zapisovací FSM ---
-    always_ff @(posedge clk or negedge rstn) begin
-        if (!rstn) begin
+    // OPRAVA: Použité správne názvy portov clk_i a rst_ni
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
             wr_state <= WR_IDLE;
             wr_burst_count <= '0;
             wr_data_count <= '0;
@@ -117,6 +121,10 @@ module FramebufferController #(
                         end
                     end
                 end
+                // VYLEPŠENIE: Defenzívna vetva pre prípad nelegálneho stavu
+                default: begin
+                    wr_state <= WR_IDLE;
+                end
             endcase
         end
     end
@@ -136,9 +144,10 @@ module FramebufferController #(
     logic line_fifo_wr_en, line_fifo_rd_en, line_fifo_full, line_fifo_empty;
     logic [DATA_WIDTH-1:0] line_fifo_wdata, line_fifo_rdata;
 
+    // POZNÁMKA: Používa sa vylepšený Fifo modul s registrovaným výstupom (viď nižšie)
     Fifo #( .WIDTH(DATA_WIDTH), .DEPTH(LINE_BUFFER_DEPTH) )
     line_buffer_fifo (
-        .clk(clk), .rstn(rstn),
+        .clk(clk_i), .rstn(rst_ni), // Správne názvy portov
         .wr_en(line_fifo_wr_en), .wr_data(line_fifo_wdata), .full(line_fifo_full),
         .rd_en(line_fifo_rd_en), .rd_data(line_fifo_rdata), .empty(line_fifo_empty)
     );
@@ -151,7 +160,7 @@ module FramebufferController #(
     // Priame prepojenie FIFO -> VGA
     assign vga_pixel_data_o  = line_fifo_rdata;
     assign vga_pixel_valid_o = !line_fifo_empty;
-    assign line_fifo_rd_en = !line_fifo_empty; // VGA vždy chce dáta
+    assign line_fifo_rd_en = !line_fifo_empty; // VGA vždy chce dáta, pokiaľ nie sú prázdne
 
     // --- Logika preaktívneho čítania (Prefetcher) ---
     typedef enum logic [0:0] { RD_IDLE, RD_PREFETCH } rd_state_t;
@@ -161,10 +170,11 @@ module FramebufferController #(
     logic [$clog2(H_RES/BURST_LEN):0] prefetch_burst_count;
 
     // --- Prefetcher FSM ---
-    always_ff @(posedge clk or negedge rstn) begin
-        if (!rstn) begin
+    // OPRAVA: Použité správne názvy portov clk_i a rst_ni
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
             rd_state <= RD_IDLE;
-            prefetched_y <= '1; // Inicializácia na neplatnú hodnotu
+            prefetched_y <= '1; // Inicializácia na neplatnú hodnotu, aby sa prvý riadok (0) načítal
             prefetch_burst_count <= '0;
         end else begin
             case (rd_state)
@@ -185,6 +195,10 @@ module FramebufferController #(
                         end
                     end
                 end
+                // VYLEPŠENIE: Defenzívna vetva pre prípad nelegálneho stavu
+                default: begin
+                    rd_state <= RD_IDLE;
+                end
             endcase
         end
     end
@@ -196,7 +210,9 @@ module FramebufferController #(
 endmodule
 
 
-// Jednoduché FIFO pre line buffer (môže byť nahradené IP z Vivado/Quartus)
+// ====================================================================================
+// Vylepšené FIFO s registrovaným výstupom pre lepší timing
+// ====================================================================================
 module Fifo #(parameter WIDTH=16, DEPTH=1024) (
     input  logic             clk,
     input  logic             rstn,
@@ -213,18 +229,27 @@ module Fifo #(parameter WIDTH=16, DEPTH=1024) (
 
     assign empty = (wr_ptr == rd_ptr);
     assign full = (wr_ptr[ADDR_WIDTH-1:0] == rd_ptr[ADDR_WIDTH-1:0]) && (wr_ptr[ADDR_WIDTH] != rd_ptr[ADDR_WIDTH]);
-    assign rd_data = mem[rd_ptr[ADDR_WIDTH-1:0]];
+
+    // ODSTRÁNENÉ: Kombinačný výstup nahradený registrovaným pre lepšie časovanie.
+    // assign rd_data = mem[rd_ptr[ADDR_WIDTH-1:0]];
 
     always_ff @(posedge clk or negedge rstn) begin
         if (!rstn) begin
             wr_ptr <= '0;
             rd_ptr <= '0;
+            rd_data <= '0; // VYLEPŠENIE: Inicializácia výstupného registra
         end else begin
+            // Zapisovacia logika zostáva rovnaká
             if (wr_en && !full) begin
                 mem[wr_ptr[ADDR_WIDTH-1:0]] <= wr_data;
                 wr_ptr <= wr_ptr + 1;
             end
+
+            // VYLEPŠENIE: Logika čítania teraz registruje výstupné dáta
             if (rd_en && !empty) begin
+                // 1. Načítať dáta z aktuálnej adresy do výstupného registra
+                rd_data <= mem[rd_ptr[ADDR_WIDTH-1:0]];
+                // 2. Až potom inkrementovať pointer pre ďalší cyklus
                 rd_ptr <= rd_ptr + 1;
             end
         end

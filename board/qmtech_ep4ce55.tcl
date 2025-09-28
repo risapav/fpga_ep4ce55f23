@@ -96,62 +96,62 @@ if { [info exists USE_VGA] && $USE_VGA == 1 } {
 
 # --- SDRAM Interface (HY57V641620FTP-6 compatible) W9825G6KH-6 ---
 if { [info exists USE_SDRAM] && $USE_SDRAM == 1 } {
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_DQ[15..0]
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_ADDR[12..0]
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_BA[1..0]
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CAS_N
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CKE
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CLK
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_CS_N
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_WE_N
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_RAS_N
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_UDQM
-  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to DRAM_LDQM
-  
-  set_location_assignment PIN_V11  -to DRAM_DQ[15]
-  set_location_assignment PIN_W10  -to DRAM_DQ[14]
-  set_location_assignment PIN_Y10  -to DRAM_DQ[13]
-  set_location_assignment PIN_V10  -to DRAM_DQ[12]
-  set_location_assignment PIN_V9   -to DRAM_DQ[11]
-  set_location_assignment PIN_Y8   -to DRAM_DQ[10]
-  set_location_assignment PIN_W8   -to DRAM_DQ[9]
-  set_location_assignment PIN_Y7   -to DRAM_DQ[8]
-  set_location_assignment PIN_AB5  -to DRAM_DQ[7]
-  set_location_assignment PIN_AA7  -to DRAM_DQ[6]
-  set_location_assignment PIN_AB7  -to DRAM_DQ[5]
-  set_location_assignment PIN_AA8  -to DRAM_DQ[4]
-  set_location_assignment PIN_AB8  -to DRAM_DQ[3]
-  set_location_assignment PIN_AA9  -to DRAM_DQ[2]
-  set_location_assignment PIN_AB9  -to DRAM_DQ[1]
-  set_location_assignment PIN_AA10 -to DRAM_DQ[0]
-  
-  set_location_assignment PIN_V6   -to DRAM_ADDR[12]
-  set_location_assignment PIN_Y4   -to DRAM_ADDR[11]
-  set_location_assignment PIN_W1   -to DRAM_ADDR[10]
-  set_location_assignment PIN_V5   -to DRAM_ADDR[9]
-  set_location_assignment PIN_Y3   -to DRAM_ADDR[8]
-  set_location_assignment PIN_AA1  -to DRAM_ADDR[7]
-  set_location_assignment PIN_Y2   -to DRAM_ADDR[6]
-  set_location_assignment PIN_V4   -to DRAM_ADDR[5]
-  set_location_assignment PIN_V3   -to DRAM_ADDR[4]
-  set_location_assignment PIN_U1   -to DRAM_ADDR[3]
-  set_location_assignment PIN_U2   -to DRAM_ADDR[2]
-  set_location_assignment PIN_V1   -to DRAM_ADDR[1]
-  set_location_assignment PIN_V2   -to DRAM_ADDR[0]
-  
-  set_location_assignment PIN_W2   -to DRAM_BA[1]
-  set_location_assignment PIN_Y1   -to DRAM_BA[0]
-    
-  set_location_assignment PIN_AA4 -to DRAM_CAS_N
-  set_location_assignment PIN_W6 -to DRAM_CKE
-  set_location_assignment PIN_Y6 -to DRAM_CLK
-  set_location_assignment PIN_AA3 -to DRAM_CS_N
-  
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_DQ[15..0]
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_ADDR[12..0]
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_BA[1..0]
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_CAS_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_CKE
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_CLK
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_CS_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_WE_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_RAS_N
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_UDQM
+  set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_LDQM
 
-  set_location_assignment PIN_AB4 -to DRAM_WE_N
-  set_location_assignment PIN_AB3 -to DRAM_RAS_N
-  set_location_assignment PIN_W7 -to DRAM_UDQM
-  set_location_assignment PIN_AA5 -to DRAM_LDQM
+  set_location_assignment PIN_V11  -to SDRAM_DQ[15]
+  set_location_assignment PIN_W10  -to SDRAM_DQ[14]
+  set_location_assignment PIN_Y10  -to SDRAM_DQ[13]
+  set_location_assignment PIN_V10  -to SDRAM_DQ[12]
+  set_location_assignment PIN_V9   -to SDRAM_DQ[11]
+  set_location_assignment PIN_Y8   -to SDRAM_DQ[10]
+  set_location_assignment PIN_W8   -to SDRAM_DQ[9]
+  set_location_assignment PIN_Y7   -to SDRAM_DQ[8]
+  set_location_assignment PIN_AB5  -to SDRAM_DQ[7]
+  set_location_assignment PIN_AA7  -to SDRAM_DQ[6]
+  set_location_assignment PIN_AB7  -to SDRAM_DQ[5]
+  set_location_assignment PIN_AA8  -to SDRAM_DQ[4]
+  set_location_assignment PIN_AB8  -to SDRAM_DQ[3]
+  set_location_assignment PIN_AA9  -to SDRAM_DQ[2]
+  set_location_assignment PIN_AB9  -to SDRAM_DQ[1]
+  set_location_assignment PIN_AA10 -to SDRAM_DQ[0]
+
+  set_location_assignment PIN_V6   -to SDRAM_ADDR[12]
+  set_location_assignment PIN_Y4   -to SDRAM_ADDR[11]
+  set_location_assignment PIN_W1   -to SDRAM_ADDR[10]
+  set_location_assignment PIN_V5   -to SDRAM_ADDR[9]
+  set_location_assignment PIN_Y3   -to SDRAM_ADDR[8]
+  set_location_assignment PIN_AA1  -to SDRAM_ADDR[7]
+  set_location_assignment PIN_Y2   -to SDRAM_ADDR[6]
+  set_location_assignment PIN_V4   -to SDRAM_ADDR[5]
+  set_location_assignment PIN_V3   -to SDRAM_ADDR[4]
+  set_location_assignment PIN_U1   -to SDRAM_ADDR[3]
+  set_location_assignment PIN_U2   -to SDRAM_ADDR[2]
+  set_location_assignment PIN_V1   -to SDRAM_ADDR[1]
+  set_location_assignment PIN_V2   -to SDRAM_ADDR[0]
+
+  set_location_assignment PIN_W2   -to SDRAM_BA[1]
+  set_location_assignment PIN_Y1   -to SDRAM_BA[0]
+
+  set_location_assignment PIN_AA4 -to SDRAM_CAS_N
+  set_location_assignment PIN_W6 -to SDRAM_CKE
+  set_location_assignment PIN_Y6 -to SDRAM_CLK
+  set_location_assignment PIN_AA3 -to SDRAM_CS_N
+
+
+  set_location_assignment PIN_AB4 -to SDRAM_WE_N
+  set_location_assignment PIN_AB3 -to SDRAM_RAS_N
+  set_location_assignment PIN_W7 -to SDRAM_UDQM
+  set_location_assignment PIN_AA5 -to SDRAM_LDQM
 }
 
 # --- UART (USB Bridge) ---
@@ -173,7 +173,7 @@ if { [info exists USE_ETH] && $USE_ETH == 1 } {
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TX_EN
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TXD0
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ETH_TXD1
-  
+
   set_location_assignment PIN_E13 -to ETH_REF_CLK
   set_location_assignment PIN_F13 -to ETH_MDIO
   set_location_assignment PIN_G13 -to ETH_MDC
@@ -209,7 +209,7 @@ if { [info exists USE_CAM] && $USE_CAM == 1 } {
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_XCLK
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_RST_N
   set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CAM_PWDN
-  
+
   set_location_assignment PIN_T17 -to CAM_SCL
   set_location_assignment PIN_R17 -to CAM_SDA
   set_location_assignment PIN_T16 -to CAM_PCLK
@@ -218,7 +218,7 @@ if { [info exists USE_CAM] && $USE_CAM == 1 } {
   set_location_assignment PIN_M16 -to CAM_XCLK
   set_location_assignment PIN_L16 -to CAM_RST_N
   set_location_assignment PIN_K16 -to CAM_PWDN
-  
+
   # DVP Data [D7:D0]
   set_location_assignment PIN_T15 -to CAM_D7
   set_location_assignment PIN_R15 -to CAM_D6

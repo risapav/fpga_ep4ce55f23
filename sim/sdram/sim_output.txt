@@ -1,0 +1,211 @@
+Reading pref.tcl
+
+# 2024.3
+
+# do run_core_batch.do
+# /home/palo/Documents/fpga_ep4ce55f23
+INFO: Project root = /home/palo/Documents/fpga_ep4ce55f23
+# Questa Intel Starter FPGA Edition-64 vmap 2024.3 Lib Mapping Utility 2024.09 Sep 10 2024
+# vmap work work 
+# Modifying modelsim.ini
+# /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v
+# /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv
+# /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv
+
+--- Fáza Kompilácie ---
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv 
+# -- Compiling module cdc_reset_synchronizer
+# 
+# Top level modules:
+# 	cdc_reset_synchronizer
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv 
+# -- Compiling module cdc_two_flop_synchronizer
+# 
+# Top level modules:
+# 	cdc_two_flop_synchronizer
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv 
+# -- Compiling module cdc_async_fifo
+# 
+# Top level modules:
+# 	cdc_async_fifo
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work "+acc" /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v 
+# -- Compiling module generic_sdram
+# 
+# Top level modules:
+# 	generic_sdram
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv 
+# -- Compiling package sdram_pkg
+# 
+# Top level modules:
+# 	--none--
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv 
+# -- Compiling package sdram_pkg
+# -- Compiling module SdramCmdArbiter
+# -- Importing package sdram_pkg
+# 
+# Top level modules:
+# 	SdramCmdArbiter
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv 
+# -- Compiling package sdram_pkg
+# -- Compiling module SdramController
+# -- Importing package sdram_pkg
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(32): (vlog-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
+# 
+# Top level modules:
+# 	SdramController
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 1
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv 
+# -- Compiling package sdram_pkg
+# -- Compiling module SdramDriver
+# -- Importing package sdram_pkg
+# 
+# Top level modules:
+# 	SdramDriver
+# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:57 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv 
+# -- Compiling module SimpleSdramTester
+# 
+# Top level modules:
+# 	SimpleSdramTester
+# End time: 17:41:58 on Sep 28,2025, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 17:41:58 on Sep 28,2025
+# vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv 
+# -- Compiling module tb_sdram_core
+# 
+# Top level modules:
+# 	tb_sdram_core
+# End time: 17:41:58 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+
+--- Fáza Spustenia Simulácie ---
+# vsim -c -onfinish exit work.tb_sdram_core 
+# Start time: 17:41:58 on Sep 28,2025
+# ** Note: (vsim-3812) Design is being optimized...
+# ** Warning: (vopt-10908) Some optimizations are turned off because the +acc switch is in effect.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(32): (vopt-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
+# ** Note: (vopt-143) Recognized 1 FSM in module "SdramController(fast)".
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(100): (vopt-2685) [TFMPC] - Too few port connections for 'read_cmd_fifo_inst'.  Expected 14, found 12.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(100): (vopt-2718) [TFMPC] - Missing connection for port 'underflow_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(100): (vopt-2718) [TFMPC] - Missing connection for port 'almost_empty_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(104): (vopt-2685) [TFMPC] - Too few port connections for 'write_cmd_fifo_inst'.  Expected 14, found 12.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(104): (vopt-2718) [TFMPC] - Missing connection for port 'underflow_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(104): (vopt-2718) [TFMPC] - Missing connection for port 'almost_empty_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(108): (vopt-2685) [TFMPC] - Too few port connections for 'write_data_fifo_inst'.  Expected 14, found 12.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(108): (vopt-2718) [TFMPC] - Missing connection for port 'underflow_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(108): (vopt-2718) [TFMPC] - Missing connection for port 'almost_empty_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2685) [TFMPC] - Too few port connections for 'read_data_fifo_inst'.  Expected 14, found 11.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2718) [TFMPC] - Missing connection for port 'almost_empty_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2718) [TFMPC] - Missing connection for port 'overflow_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2718) [TFMPC] - Missing connection for port 'almost_full_o'.
+# ** Note: (vopt-143) Recognized 1 FSM in module "SdramDriver(fast)".
+# ** Note: (vopt-143) Recognized 1 FSM in module "SimpleSdramTester(fast)".
+# ** Note: (vsim-12126) Error and warning message counts have been restored: Errors=0, Warnings=15.
+# //  Questa Intel Starter FPGA Edition-64
+# //  Version 2024.3 linux_x86_64 Sep 10 2024
+# //
+# // Unpublished work. Copyright 2024 Siemens
+# //
+# // This material contains trade secrets or otherwise confidential information
+# // owned by Siemens Industry Software Inc. or its affiliates (collectively,
+# // "SISW"), or its licensors. Access to and use of this information is strictly
+# // limited as set forth in the Customer's applicable agreements with SISW.
+# //
+# // This material may not be copied, distributed, or otherwise disclosed outside
+# // of the Customer's facilities without the express written permission of SISW,
+# // and may not be used in any way not expressly authorized by SISW.
+# //
+# Loading sv_std.std
+# Loading work.tb_sdram_core(fast)
+# Loading work.SimpleSdramTester(fast)
+# Loading work.sdram_pkg(fast)
+# Loading work.SdramDriver(fast)
+# Loading work.cdc_async_fifo(fast)
+# Loading work.cdc_reset_synchronizer(fast)
+# Loading work.cdc_two_flop_synchronizer(fast)
+# Loading work.cdc_async_fifo(fast__1)
+# Loading work.cdc_two_flop_synchronizer(fast__1)
+# Loading work.cdc_async_fifo(fast__2)
+# Loading work.SdramCmdArbiter(fast)
+# Loading work.SdramController(fast)
+# Loading work.generic_sdram(fast)
+# [0 ns] -- TESTER: state= 0, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=x, last=x, data=xxxx (exp: a500)
+# [5000 ns] -- TESTER: state= 0, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [205000 ns] -- TESTER: state= 1, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [215000 ns] -- TESTER: state= 2, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [225000 ns] -- TESTER: state= 3, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [235000 ns] -- TESTER: state= 3, burst_cnt= 1 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a501)
+# [245000 ns] -- TESTER: state= 3, burst_cnt= 2 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a502)
+# [255000 ns] -- TESTER: state= 3, burst_cnt= 3 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a503)
+# [265000 ns] -- TESTER: state= 3, burst_cnt= 4 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a504)
+# [275000 ns] -- TESTER: state= 3, burst_cnt= 5 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a505)
+# [285000 ns] -- TESTER: state= 3, burst_cnt= 6 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a506)
+# [295000 ns] -- TESTER: state= 3, burst_cnt= 7 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a507)
+# [305000 ns] -- TESTER: state= 4, burst_cnt= 8 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a508)
+# [315000 ns] -- TESTER: state= 5, burst_cnt= 8 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a508)
+# [325000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200205000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 1, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200245000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 2, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200345000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 3, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200445000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 4, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200455000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200465000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 6, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200475000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 7, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200505000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 9, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200515000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 7 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200555000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 6 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200565000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 5 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200575000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 4 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200585000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 3 | RESPONSE: valid=1, last=0, data=0000 (exp: a500)
+# [200595000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 2 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200605000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 1 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200615000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 0 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200625000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200635000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 6, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200645000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 7, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200675000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 8, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200685000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 9, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200695000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 7 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200705000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 6 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200715000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 5 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200725000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 4 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200735000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 3 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200745000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 2 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200755000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 1 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200765000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 0 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+--- Simulácia Dokončená ---
+VSIM 2> # End time: 17:42:46 on Sep 28,2025, Elapsed time: 0:00:48
+# Errors: 0, Warnings: 15
