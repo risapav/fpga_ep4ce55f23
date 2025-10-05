@@ -14,52 +14,52 @@ INFO: Project root = /home/palo/Documents/fpga_ep4ce55f23
 
 --- Fáza Kompilácie ---
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv 
 # -- Compiling module cdc_reset_synchronizer
 # 
 # Top level modules:
 # 	cdc_reset_synchronizer
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv 
 # -- Compiling module cdc_two_flop_synchronizer
 # 
 # Top level modules:
 # 	cdc_two_flop_synchronizer
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv 
 # -- Compiling module cdc_async_fifo
 # 
 # Top level modules:
 # 	cdc_async_fifo
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work "+acc" /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v 
 # -- Compiling module generic_sdram
 # 
 # Top level modules:
 # 	generic_sdram
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv 
 # -- Compiling package sdram_pkg
 # 
 # Top level modules:
 # 	--none--
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv 
 # -- Compiling package sdram_pkg
 # -- Compiling module SdramCmdArbiter
@@ -67,22 +67,22 @@ INFO: Project root = /home/palo/Documents/fpga_ep4ce55f23
 # 
 # Top level modules:
 # 	SdramCmdArbiter
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv 
 # -- Compiling package sdram_pkg
 # -- Compiling module SdramController
 # -- Importing package sdram_pkg
-# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(32): (vlog-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(33): (vlog-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
 # 
 # Top level modules:
 # 	SdramController
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 1
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv 
 # -- Compiling package sdram_pkg
 # -- Compiling module SdramDriver
@@ -90,33 +90,33 @@ INFO: Project root = /home/palo/Documents/fpga_ep4ce55f23
 # 
 # Top level modules:
 # 	SdramDriver
-# End time: 17:41:57 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:57 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv 
 # -- Compiling module SimpleSdramTester
 # 
 # Top level modules:
 # 	SimpleSdramTester
-# End time: 17:41:58 on Sep 28,2025, Elapsed time: 0:00:01
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 # Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
-# Start time: 17:41:58 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # vlog -work work -sv "+acc" /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_sdram_core.sv 
 # -- Compiling module tb_sdram_core
 # 
 # Top level modules:
 # 	tb_sdram_core
-# End time: 17:41:58 on Sep 28,2025, Elapsed time: 0:00:00
+# End time: 20:10:38 on Sep 29,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
 
 --- Fáza Spustenia Simulácie ---
 # vsim -c -onfinish exit work.tb_sdram_core 
-# Start time: 17:41:58 on Sep 28,2025
+# Start time: 20:10:38 on Sep 29,2025
 # ** Note: (vsim-3812) Design is being optimized...
 # ** Warning: (vopt-10908) Some optimizations are turned off because the +acc switch is in effect.
-# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(32): (vopt-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(33): (vopt-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
 # ** Note: (vopt-143) Recognized 1 FSM in module "SdramController(fast)".
 # ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(100): (vopt-2685) [TFMPC] - Too few port connections for 'read_cmd_fifo_inst'.  Expected 14, found 12.
 # ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(100): (vopt-2718) [TFMPC] - Missing connection for port 'underflow_o'.
@@ -131,9 +131,11 @@ INFO: Project root = /home/palo/Documents/fpga_ep4ce55f23
 # ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2718) [TFMPC] - Missing connection for port 'almost_empty_o'.
 # ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2718) [TFMPC] - Missing connection for port 'overflow_o'.
 # ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(112): (vopt-2718) [TFMPC] - Missing connection for port 'almost_full_o'.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(224): (vopt-2685) [TFMPC] - Too few port connections for 'controller'.  Expected 22, found 21.
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv(224): (vopt-2718) [TFMPC] - Missing connection for port 'wdata_dqm_i'.
 # ** Note: (vopt-143) Recognized 1 FSM in module "SdramDriver(fast)".
 # ** Note: (vopt-143) Recognized 1 FSM in module "SimpleSdramTester(fast)".
-# ** Note: (vsim-12126) Error and warning message counts have been restored: Errors=0, Warnings=15.
+# ** Note: (vsim-12126) Error and warning message counts have been restored: Errors=0, Warnings=17.
 # //  Questa Intel Starter FPGA Edition-64
 # //  Version 2024.3 linux_x86_64 Sep 10 2024
 # //
@@ -178,34 +180,67 @@ INFO: Project root = /home/palo/Documents/fpga_ep4ce55f23
 # [315000 ns] -- TESTER: state= 5, burst_cnt= 8 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a508)
 # [325000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 0, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
 # [200205000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 1, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200245000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 2, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200345000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 3, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200445000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 4, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200455000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200465000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 6, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200475000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 7, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200505000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 9, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200515000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 7 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200555000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 6 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200565000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 5 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200575000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 4 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
-# [200585000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 3 | RESPONSE: valid=1, last=0, data=0000 (exp: a500)
-# [200595000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 2 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200605000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 1 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200615000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 0 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200625000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200635000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 6, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200645000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 7, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200675000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 8, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200685000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 9, burst_cnt=15 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200695000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 7 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200705000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 6 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200715000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 5 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200725000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 4 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200735000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 3 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200745000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 2 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200755000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 1 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
-# [200765000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 0 | RESPONSE: valid=1, last=0, data=xxxx (exp: a500)
+# [200215000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 2, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200255000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 3, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200355000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 4, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200365000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200375000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 6, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200385000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 7, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200425000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 9, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200435000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 1 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200445000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=10, burst_cnt= 0 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200455000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200465000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state=12, burst_cnt=15 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200475000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=0, last=0, data=0000 (exp: a500)
+# [200495000 ns] -- TESTER: state= 6, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=0000 (exp: a500)
+# [200505000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200515000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 6, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200525000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 7, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200565000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 8, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200575000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 9, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200585000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=11, burst_cnt= 1 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200595000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=11, burst_cnt= 0 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200605000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200645000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=12, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [200655000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [203515000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [203525000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [208170000] ERROR: Refresh interval exceeded!
+# [211335000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [211345000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [215990000] ERROR: Refresh interval exceeded!
+# [219155000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [219165000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [223810000] ERROR: Refresh interval exceeded!
+# [226975000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [226985000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [231630000] ERROR: Refresh interval exceeded!
+# [234795000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [234805000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [239450000] ERROR: Refresh interval exceeded!
+# [242615000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [242625000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [247270000] ERROR: Refresh interval exceeded!
+# [250435000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [250445000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [255090000] ERROR: Refresh interval exceeded!
+# [258255000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [258265000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [262910000] ERROR: Refresh interval exceeded!
+# [266075000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [266085000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [270730000] ERROR: Refresh interval exceeded!
+# [273895000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [273905000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [278550000] ERROR: Refresh interval exceeded!
+# [281715000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [281725000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [286370000] ERROR: Refresh interval exceeded!
+# [289535000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [289545000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [294190000] ERROR: Refresh interval exceeded!
+# [297355000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state=13, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
+# [297365000 ns] -- TESTER: state= 8, burst_cnt= 0 | CONTROLLER: state= 5, burst_cnt=15 | RESPONSE: valid=1, last=0, data=zzzz (exp: a500)
 --- Simulácia Dokončená ---
-VSIM 2> # End time: 17:42:46 on Sep 28,2025, Elapsed time: 0:00:48
-# Errors: 0, Warnings: 15
+VSIM 2> # End time: 20:10:50 on Sep 29,2025, Elapsed time: 0:00:12
+# Errors: 0, Warnings: 17

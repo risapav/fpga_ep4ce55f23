@@ -61,8 +61,17 @@ module tb_sdram_core;
 
     // --- Inštancia #3: SDRAM Model ---
     generic_sdram sdram_model (
-        .DQ(SDRAM_DQ), .A(SDRAM_ADDR), .BA(SDRAM_BA), .CLK(clk_100mhz_shifted), .CKE(SDRAM_CKE),
-        .CS_n(SDRAM_CS_N), .RAS_n(SDRAM_RAS_N), .CAS_n(SDRAM_CAS_N), .WE_n(SDRAM_WE_N), .DQM({SDRAM_UDQM, SDRAM_LDQM})
+        .DQ(SDRAM_DQ),
+        .A(SDRAM_ADDR),
+        .BA(SDRAM_BA),
+        .CLK(clk_100mhz_shifted),
+        .rstn(rstn_axi),           // <-- pridané
+        .CKE(SDRAM_CKE),
+        .CS_n(SDRAM_CS_N),
+        .RAS_n(SDRAM_RAS_N),
+        .CAS_n(SDRAM_CAS_N),
+        .WE_n(SDRAM_WE_N),
+        .DQM({SDRAM_UDQM, SDRAM_LDQM})
     );
 
     // =================================================================
@@ -78,7 +87,7 @@ module tb_sdram_core;
             $time,
             tester.state_reg,
             tester.burst_cnt,
-            sdram_driver.controller.state,
+            sdram_driver.controller.state_reg,
             sdram_driver.controller.burst_cnt,
             resp_valid,
             resp_last,

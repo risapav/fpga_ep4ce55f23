@@ -1,9 +1,14 @@
-// generic_sdram.sv - Verzia 5.0 - Definitívna verzia po expertnom review
-// - Plne funkčná a správna pipeline pre čítanie s dynamickým per-beat DQM.
-// - Detailné a presné per-bank časovacie kontroly (tRCD, tRP, tRAS, tWR).
-// - Plná a protokolovo správna podpora pre Auto-Precharge s kontrolou tRAS.
-// - Kontrola povinného periodického refreshu.
-// - Inicializácia pamäte a optimalizované registre.
+// generic_sdram.sv - Verzia 5.2.1 - Finálna oprava "multiple drivers"
+//
+// Popis:
+// Finálna, robustná verzia simulačného modelu SDRAM.
+//
+// Kľúčové zmeny v tejto verzii:
+// 1. OPRAVA (Multiple Drivers): Inicializácia pamäte bola presunutá z `initial` bloku
+//    priamo do resetovacej vetvy `always_ff`, čím sa odstránil problém s viacerými drivermi.
+//
+// Author: refactor by assistant & user feedback
+
 `timescale 1ns / 1ps
 (* default_nettype = "none" *)
 
@@ -63,9 +68,9 @@ module generic_sdram #(
     logic [9:0]                 read_burst_cnt, write_burst_cnt;
     logic [C_COLS-1:0]          read_col, write_col;
     logic [1:0]                 read_bank, write_bank;
-
     logic [MAX_CAS_LATENCY-1:0] cas_pipe_valid;
     logic [C_DQ_BITS-1:0]       cas_pipe_data [0:MAX_CAS_LATENCY-1];
+    logic [1:0]                 cas_pipe_dqm [0:MAX_CAS_LATENCY-1];
 
     // --- Riadenie DQ Zbernice ---
     logic [C_DQ_BITS-1:0] dq_out;
@@ -78,18 +83,13 @@ module generic_sdram #(
         return temp;
     endfunction
 
-    assign DQ = dq_oe ? mask_data(dq_out, DQM) : {C_DQ_BITS{1'bz}};
+    assign DQ = dq_oe ? mask_data(dq_out, cas_pipe_dqm[cas_latency-1]) : {C_DQ_BITS{1'bz}};
 
-    initial begin
-        for (integer b = 0; b < C_BANKS; b = b + 1)
-            for (integer r = 0; r < (1<<C_ROWS); r = r + 1)
-                for (integer c = 0; c < (1<<C_COLS); c = c + 1)
-                    mem[b][r][c] = 0;
-    end
-
+    // --- Hlavný Sekvenčný Proces ---
     always_ff @(posedge CLK) begin
+        automatic int safe_cl = 0;
+
         if (!rstn) begin
-            // Synchrónny reset všetkých stavov
             for (integer i = 0; i < C_BANKS; i = i + 1) begin
                 bank_is_active[i] <= 1'b0; bank_trcd_timer[i] <= 0;
                 bank_trp_timer[i] <= 0; bank_tras_timer[i] <= 0;
@@ -98,7 +98,17 @@ module generic_sdram #(
             read_burst_cnt <= 0; write_burst_cnt <= 0;
             cas_pipe_valid <= '0;
             write_recovery_timer <= 0; refresh_cycle_timer <= 0; refresh_request_timer <= 0;
-            cas_latency <= 3; burst_length <= 8; // Defaultné hodnoty pred MRS
+            cas_latency  <= 'x;
+            burst_length <= 'x;
+            dq_oe <= 1'b0;
+            dq_out <= '0;
+
+            // OPRAVA: Inicializácia pamäte sa teraz deje tu, v synchrónnom resete
+            for (integer b = 0; b < C_BANKS; b = b + 1)
+                for (integer r = 0; r < (1<<C_ROWS); r = r + 1)
+                    for (integer c = 0; c < (1<<C_COLS); c = c + 1)
+                        mem[b][r][c] = 0;
+
         end else if (CKE) begin
             // Znižovanie časovačov
             for (integer i = 0; i < C_BANKS; i = i + 1) begin
@@ -118,13 +128,15 @@ module generic_sdram #(
             end
 
             // Pipeline pre Čítanie (Posuvný register)
+            // 1. Vždy posunieme existujúce dáta v pipeline
             cas_pipe_valid <= {cas_pipe_valid[MAX_CAS_LATENCY-2:0], 1'b0};
             for (integer i = MAX_CAS_LATENCY-1; i > 0; i = i - 1) begin
                 cas_pipe_data[i] <= cas_pipe_data[i-1];
+                cas_pipe_dqm[i]  <= cas_pipe_dqm[i-1];
             end
             cas_pipe_valid[0] <= 1'b0;
 
-            // Dekódovanie Príkazov: priorita je prebiehajúci burst > refresh > nový príkaz
+            // Dekódovanie Príkazov
             if (read_burst_cnt == 0 && write_burst_cnt == 0 && refresh_cycle_timer == 0) begin
                 if (!CS_n) begin
                     case (cmd)
@@ -133,7 +145,7 @@ module generic_sdram #(
                                 3'b000: burst_length <= 1; 3'b001: burst_length <= 2;
                                 3'b010: burst_length <= 4; 3'b011: burst_length <= 8;
                                 3'b111: burst_length <= (1 << C_COLS);
-                                default: burst_length <= 1;
+                                default: burst_length <= 'x;
                             endcase
                             cas_latency <= A[6:4];
                         end
@@ -147,6 +159,7 @@ module generic_sdram #(
                             if (bank_is_active[BA] && bank_trcd_timer[BA] == 0) begin
                                 read_bank <= BA; read_col <= A[C_COLS-1:0];
                                 read_burst_cnt <= burst_length;
+                                cas_pipe_dqm[0] <= DQM;
                                 auto_precharge_req[BA] <= A[10];
                             end else $display("[%0t] ERROR: tRCD Violation on Bank %d", $time, BA);
                         end
@@ -170,12 +183,14 @@ module generic_sdram #(
                 end
             end
 
-            // Vkladanie nových dát do čítacej pipeline počas burstu
+            // 2. Vkladáme nové dáta, ak je aktívny burst
             if (read_burst_cnt > 0) begin
                 cas_pipe_valid[0] <= 1'b1;
                 cas_pipe_data[0]  <= mem[read_bank][active_row[read_bank]][read_col];
                 read_col          <= read_col + 1;
                 read_burst_cnt    <= read_burst_cnt - 1;
+
+                // Auto-precharge sa plánuje po poslednom slove
                 if (read_burst_cnt == 1 && auto_precharge_req[read_bank]) begin
                     auto_precharge_req[read_bank] <= 1'b0;
                     if (bank_tras_timer[read_bank] == 0) begin
@@ -183,6 +198,8 @@ module generic_sdram #(
                         bank_trp_timer[read_bank] <= cas_latency + burst_length + tRP;
                     end else $display("[%0t] ERROR: Auto-Precharge failed tRAS violation on Bank %d", $time, read_bank);
                 end
+            end else begin
+                cas_pipe_valid[0] <= 1'b0;
             end
 
             // Spracovanie zapisovacieho burstu
@@ -202,15 +219,19 @@ module generic_sdram #(
                     end
                 end
             end
-        end
-    end
 
-    // Kombinačná logika pre výstup
-    always_comb begin
-        // Poznámka: Ak sa `cas_latency` zmení cez MRS, výstup sa prispôsobí.
-        // Správny radič by však nemal meniť MRS počas aktívnej transakcie.
-        dq_oe  = cas_pipe_valid[cas_latency-1];
-        dq_out = cas_pipe_data[cas_latency-1];
+            // Výstupná logika (registrovaná)
+            if (!$isunknown(cas_latency) && cas_latency >= 1 && cas_latency <= MAX_CAS_LATENCY) begin
+                safe_cl = $unsigned(cas_latency);
+            end
+
+            if (safe_cl > 0 && cas_pipe_valid[safe_cl-1]) begin
+                dq_oe  <= 1'b1;
+                dq_out <= cas_pipe_data[safe_cl-1];
+            end else begin
+                dq_oe <= 1'b0;
+            end
+        end // if CKE
     end
 
 endmodule

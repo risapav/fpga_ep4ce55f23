@@ -1,0 +1,449 @@
+# do run.do
+# /home/palo/Documents/fpga_ep4ce55f23
+# /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib
+# Questa Intel Starter FPGA Edition-64 vmap 2024.3 Lib Mapping Utility 2024.09 Sep 10 2024
+# vmap work work 
+# Modifying modelsim.ini
+# Questa Intel Starter FPGA Edition-64 vmap 2024.3 Lib Mapping Utility 2024.09 Sep 10 2024
+# vmap altera_lib altera_lib 
+# Modifying modelsim.ini
+# /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib/altera_primitives.v /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib/cycloneive_atoms.v /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib/altera_mf.v
+# /home/palo/Documents/fpga_ep4ce55f23/src/utils/seven_seg_decoder.sv /home/palo/Documents/fpga_ep4ce55f23/common/src/utils/blink_led.sv /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v
+# /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv /home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv
+# /home/palo/Documents/fpga_ep4ce55f23/cores/ClkPll.v
+# /home/palo/Documents/fpga_ep4ce55f23/top.sv /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/tb_top.sv
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:46 on Sep 28,2025
+# vlog -work altera_lib -vopt "+acc" /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib/altera_primitives.v 
+# -- Compiling module global
+# -- Compiling module carry
+# -- Compiling module cascade
+# -- Compiling module carry_sum
+# -- Compiling module exp
+# -- Compiling module soft
+# -- Compiling module opndrn
+# -- Compiling module row_global
+# -- Compiling module TRI
+# -- Compiling module lut_input
+# -- Compiling module lut_output
+# -- Compiling module latch
+# -- Compiling module dlatch
+# -- Compiling module prim_gdff
+# -- Compiling module dff
+# -- Compiling module dffe
+# -- Compiling module dffea
+# -- Compiling module dffeas
+# -- Compiling module dffeas_pr
+# -- Compiling module prim_gtff
+# -- Compiling module tff
+# -- Compiling module tffe
+# -- Compiling module prim_gjkff
+# -- Compiling module jkff
+# -- Compiling module jkffe
+# -- Compiling module prim_gsrff
+# -- Compiling module srff
+# -- Compiling module srffe
+# -- Compiling module clklock
+# -- Compiling module alt_inbuf
+# -- Compiling module alt_outbuf
+# -- Compiling module alt_outbuf_tri
+# -- Compiling module alt_iobuf
+# -- Compiling module alt_inbuf_diff
+# -- Compiling module alt_outbuf_diff
+# -- Compiling module alt_outbuf_tri_diff
+# -- Compiling module alt_iobuf_diff
+# -- Compiling module alt_bidir_diff
+# -- Compiling module alt_bidir_buf
+# -- Compiling UDP PRIM_GDFF_LOW
+# -- Compiling UDP PRIM_GDFF_LOW_SCLR_PRIORITY
+# -- Compiling UDP PRIM_GDFF_HIGH
+# -- Compiling UDP PRIM_GDFF_HIGH_SCLR_PRIORITY
+# 
+# Top level modules:
+# 	global
+# 	carry
+# 	cascade
+# 	carry_sum
+# 	exp
+# 	soft
+# 	opndrn
+# 	row_global
+# 	TRI
+# 	lut_input
+# 	lut_output
+# 	latch
+# 	dlatch
+# 	dff
+# 	dffe
+# 	dffea
+# 	dffeas
+# 	dffeas_pr
+# 	tff
+# 	tffe
+# 	jkff
+# 	jkffe
+# 	srff
+# 	srffe
+# 	clklock
+# 	alt_inbuf
+# 	alt_outbuf
+# 	alt_outbuf_tri
+# 	alt_iobuf
+# 	alt_inbuf_diff
+# 	alt_outbuf_diff
+# 	alt_outbuf_tri_diff
+# 	alt_iobuf_diff
+# 	alt_bidir_diff
+# 	alt_bidir_buf
+# End time: 11:46:46 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:46 on Sep 28,2025
+# vlog -work altera_lib -vopt "+acc" /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib/cycloneive_atoms.v 
+# -- Compiling UDP CYCLONEIVE_PRIM_DFFE
+# -- Compiling UDP CYCLONEIVE_PRIM_DFFEAS
+# -- Compiling UDP CYCLONEIVE_PRIM_DFFEAS_HIGH
+# -- Compiling module cycloneive_dffe
+# -- Compiling module cycloneive_mux21
+# -- Compiling module cycloneive_mux41
+# -- Compiling module cycloneive_and1
+# -- Compiling module cycloneive_and16
+# -- Compiling module cycloneive_bmux21
+# -- Compiling module cycloneive_b17mux21
+# -- Compiling module cycloneive_nmux21
+# -- Compiling module cycloneive_b5mux21
+# -- Compiling module cycloneive_latch
+# -- Compiling module cycloneive_routing_wire
+# -- Compiling module cycloneive_m_cntr
+# -- Compiling module cycloneive_n_cntr
+# -- Compiling module cycloneive_scale_cntr
+# -- Compiling module cycloneive_pll_reg
+# -- Compiling module cycloneive_pll
+# -- Compiling module cycloneive_lcell_comb
+# -- Compiling module cycloneive_ff
+# -- Compiling module cycloneive_ram_pulse_generator
+# -- Compiling module cycloneive_ram_register
+# -- Compiling module cycloneive_ram_block
+# -- Compiling module cycloneive_mac_data_reg
+# -- Compiling module cycloneive_mac_sign_reg
+# -- Compiling module cycloneive_mac_mult_internal
+# -- Compiling module cycloneive_mac_mult
+# -- Compiling module cycloneive_mac_out
+# -- Compiling module cycloneive_io_ibuf
+# -- Compiling module cycloneive_io_obuf
+# -- Compiling module cycloneive_ddio_out
+# -- Compiling module cycloneive_ddio_oe
+# -- Compiling module cycloneive_pseudo_diff_out
+# -- Compiling module cycloneive_io_pad
+# -- Compiling module cycloneive_asmiblock
+# -- Compiling module cycloneive_ena_reg
+# -- Compiling module cycloneive_clkctrl
+# -- Compiling module cycloneive_rublock
+# -- Compiling module cycloneive_apfcontroller
+# -- Compiling module cycloneive_termination_ctrl
+# -- Compiling module cycloneive_termination_rupdn
+# -- Compiling module cycloneive_termination
+# -- Compiling module cycloneive_jtag
+# -- Compiling module cycloneive_crcblock
+# -- Compiling module cycloneive_oscillator
+# 
+# Top level modules:
+# 	cycloneive_dffe
+# 	cycloneive_and1
+# 	cycloneive_and16
+# 	cycloneive_bmux21
+# 	cycloneive_b17mux21
+# 	cycloneive_nmux21
+# 	cycloneive_b5mux21
+# 	cycloneive_pll_reg
+# 	cycloneive_pll
+# 	cycloneive_lcell_comb
+# 	cycloneive_ff
+# 	cycloneive_ram_block
+# 	cycloneive_mac_mult
+# 	cycloneive_mac_out
+# 	cycloneive_io_ibuf
+# 	cycloneive_io_obuf
+# 	cycloneive_ddio_out
+# 	cycloneive_ddio_oe
+# 	cycloneive_pseudo_diff_out
+# 	cycloneive_io_pad
+# 	cycloneive_asmiblock
+# 	cycloneive_clkctrl
+# 	cycloneive_rublock
+# 	cycloneive_apfcontroller
+# 	cycloneive_termination
+# 	cycloneive_jtag
+# 	cycloneive_crcblock
+# 	cycloneive_oscillator
+# End time: 11:46:46 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:46 on Sep 28,2025
+# vlog -work altera_lib -vopt "+acc" /home/palo/intelFPGA_lite/24.1std/quartus/eda/sim_lib/altera_mf.v 
+# -- Compiling module lcell
+# -- Compiling module ALTERA_MF_MEMORY_INITIALIZATION
+# -- Compiling module ALTERA_MF_HINT_EVALUATION
+# -- Compiling module ALTERA_DEVICE_FAMILIES
+# -- Compiling module dffp
+# -- Compiling module pll_iobuf
+# -- Compiling module stx_m_cntr
+# -- Compiling module stx_n_cntr
+# -- Compiling module stx_scale_cntr
+# -- Compiling module MF_pll_reg
+# -- Compiling module MF_stratix_pll
+# -- Compiling module arm_m_cntr
+# -- Compiling module arm_n_cntr
+# -- Compiling module arm_scale_cntr
+# -- Compiling module MF_stratixii_pll
+# -- Compiling module ttn_m_cntr
+# -- Compiling module ttn_n_cntr
+# -- Compiling module ttn_scale_cntr
+# -- Compiling module MF_stratixiii_pll
+# -- Compiling module cda_m_cntr
+# -- Compiling module cda_n_cntr
+# -- Compiling module cda_scale_cntr
+# -- Compiling module MF_cycloneiii_pll
+# -- Compiling module MF_cycloneiiigl_m_cntr
+# -- Compiling module MF_cycloneiiigl_n_cntr
+# -- Compiling module MF_cycloneiiigl_scale_cntr
+# -- Compiling module cycloneiiigl_post_divider
+# -- Compiling module MF_cycloneiiigl_pll
+# -- Compiling module altpll
+# -- Compiling module altlvds_rx
+# -- Compiling module stratix_lvds_rx
+# -- Compiling module stratixgx_dpa_lvds_rx
+# -- Compiling module stratixii_lvds_rx
+# -- Compiling module flexible_lvds_rx
+# -- Compiling module stratixiii_lvds_rx
+# -- Compiling module stratixiii_lvds_rx_channel
+# -- Compiling module stratixiii_lvds_rx_dpa
+# -- Compiling module altlvds_tx
+# -- Compiling module stratixv_local_clk_divider
+# -- Compiling module stratix_tx_outclk
+# -- Compiling module stratixii_tx_outclk
+# -- Compiling module flexible_lvds_tx
+# -- Compiling module dcfifo_dffpipe
+# -- Compiling module dcfifo_fefifo
+# -- Compiling module dcfifo_async
+# -- Compiling module dcfifo_sync
+# -- Compiling module dcfifo_low_latency
+# -- Compiling module dcfifo_mixed_widths
+# -- Compiling module dcfifo
+# -- Compiling module altera_syncram_derived
+# -- Compiling module altera_syncram_derived_forwarding_logic
+# -- Compiling module altaccumulate
+# -- Compiling module altmult_accum
+# -- Compiling module altmult_add
+# -- Compiling module altfp_mult
+# -- Compiling module altsqrt
+# -- Compiling module altclklock
+# -- Compiling module altddio_in
+# -- Compiling module altddio_out
+# -- Compiling module altddio_bidir
+# -- Compiling module altdpram
+# -- Compiling module altsyncram
+# -- Compiling module altsyncram_body
+# -- Compiling module alt3pram
+# -- Compiling module parallel_add
+# -- Compiling module scfifo
+# -- Compiling module altshift_taps
+# -- Compiling module a_graycounter
+# -- Compiling module altsquare
+# -- Compiling module altera_std_synchronizer
+# -- Compiling module altera_std_synchronizer_bundle
+# -- Compiling module alt_cal
+# -- Compiling module alt_cal_mm
+# -- Compiling module alt_cal_c3gxb
+# -- Compiling module alt_cal_sv
+# -- Compiling module alt_cal_av
+# -- Compiling module alt_aeq_s4
+# -- Compiling module alt_eyemon
+# -- Compiling module alt_dfe
+# -- Compiling module signal_gen
+# -- Compiling module jtag_tap_controller
+# -- Compiling module dummy_hub
+# -- Compiling module sld_virtual_jtag
+# -- Compiling module sld_signaltap
+# -- Compiling module altstratixii_oct
+# -- Compiling module altparallel_flash_loader
+# -- Compiling module altserial_flash_loader
+# -- Compiling module alt_fault_injection
+# -- Compiling module sld_virtual_jtag_basic
+# -- Compiling module altsource_probe
+# 
+# Top level modules:
+# 	lcell
+# 	altpll
+# 	altlvds_rx
+# 	altlvds_tx
+# 	dcfifo
+# 	altaccumulate
+# 	altmult_accum
+# 	altmult_add
+# 	altfp_mult
+# 	altsqrt
+# 	altclklock
+# 	altddio_bidir
+# 	altdpram
+# 	alt3pram
+# 	parallel_add
+# 	scfifo
+# 	altshift_taps
+# 	a_graycounter
+# 	altsquare
+# 	altera_std_synchronizer_bundle
+# 	alt_cal
+# 	alt_cal_mm
+# 	alt_cal_c3gxb
+# 	alt_cal_sv
+# 	alt_cal_av
+# 	alt_aeq_s4
+# 	alt_eyemon
+# 	alt_dfe
+# 	sld_virtual_jtag
+# 	sld_signaltap
+# 	altstratixii_oct
+# 	altparallel_flash_loader
+# 	altserial_flash_loader
+# 	alt_fault_injection
+# 	sld_virtual_jtag_basic
+# 	altsource_probe
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/utils/seven_seg_decoder.sv 
+# -- Compiling module seven_seg_decoder
+# 
+# Top level modules:
+# 	seven_seg_decoder
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/utils/blink_led.sv 
+# -- Compiling module blink_led
+# 
+# Top level modules:
+# 	blink_led
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_reset_synchronizer.sv 
+# -- Compiling module cdc_reset_synchronizer
+# 
+# Top level modules:
+# 	cdc_reset_synchronizer
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_two_flop_synchronizer.sv 
+# -- Compiling module cdc_two_flop_synchronizer
+# 
+# Top level modules:
+# 	cdc_two_flop_synchronizer
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/common/src/cdc/cdc_async_fifo.sv 
+# -- Compiling module cdc_async_fifo
+# 
+# Top level modules:
+# 	cdc_async_fifo
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/sim/sdram/generic_sdram.v 
+# -- Compiling module generic_sdram
+# 
+# Top level modules:
+# 	generic_sdram
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_pkg.sv 
+# -- Compiling package sdram_pkg
+# 
+# Top level modules:
+# 	--none--
+# End time: 11:46:47 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:47 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_arbiter.sv 
+# -- Compiling package sdram_pkg
+# -- Compiling module SdramCmdArbiter
+# -- Importing package sdram_pkg
+# 
+# Top level modules:
+# 	SdramCmdArbiter
+# End time: 11:46:48 on Sep 28,2025, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:48 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv 
+# -- Compiling package sdram_pkg
+# -- Compiling module SdramController
+# -- Importing package sdram_pkg
+# ** Warning: /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_ctrl.sv(39): (vlog-13314) Defaulting port 'cmd_fifo_data' kind to 'var' rather than 'wire' due to default compile option setting of -svinputport=relaxed.
+# 
+# Top level modules:
+# 	SdramController
+# End time: 11:46:48 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 1
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:48 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/sdram_driver.sv 
+# -- Compiling package sdram_pkg
+# -- Compiling module SdramDriver
+# -- Importing package sdram_pkg
+# 
+# Top level modules:
+# 	SdramDriver
+# End time: 11:46:48 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:48 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/src/sdram/simple_sdram_tester.sv 
+# -- Compiling module SimpleSdramTester
+# 
+# Top level modules:
+# 	SimpleSdramTester
+# End time: 11:46:48 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:48 on Sep 28,2025
+# vlog -work work -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/cores/ClkPll.v 
+# -- Compiling module ClkPll
+# 
+# Top level modules:
+# 	ClkPll
+# End time: 11:46:48 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Questa Intel Starter FPGA Edition-64 vlog 2024.3 Compiler 2024.09 Sep 10 2024
+# Start time: 11:46:48 on Sep 28,2025
+# vlog -work work -sv -vopt "+acc" /home/palo/Documents/fpga_ep4ce55f23/top.sv 
+# -- Compiling module top
+# 
+# Top level modules:
+# 	top
+# End time: 11:46:48 on Sep 28,2025, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# ** Error: Kompilácia zlyhala, súbor nebol nájdený.
+# Error in macro ./run.do line 84
+# Kompilácia zlyhala, súbor nebol nájdený.
+#     while executing
+# "error "Kompilácia zlyhala, súbor nebol nájdený.""
+#     (procedure "safe_vlog" line 11)
+#     invoked from within
+# "safe_vlog work $f "
+#     ("foreach" body line 1)
+#     invoked from within
+# "foreach f $TOP_SRC { safe_vlog work $f }"
+# Break key hit
