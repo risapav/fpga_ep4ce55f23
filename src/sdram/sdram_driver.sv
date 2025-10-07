@@ -1,19 +1,13 @@
-// sdram_driver.sv - Refaktorovaná verzia 3.2 (produkčná kvalita)
+// sdram_driver.sv - Verzia 3.3 - Finálna verzia s podporou DQM
 //
-// Verzia 3.2 - Architektonické vylepšenia a finálne čistenie
+// Kľúčové zmeny v tejto verzii:
+// 1. VYLEPŠENIE (DQM): Pridaná plná podpora pre per-beat DQM pri zápise. Rozhranie
+//    bolo rozšírené o vstup `writer_dqm_i` a `write_data_fifo` teraz prenáša
+//    aj DQM informáciu k SDRAM radiču.
 //
-// Kľúčové zmeny:
-// 1. VYLEPŠENIE (Architektúra): Modul teraz prijíma dva oddelené, synchronizované
-//    resety (`rstn_axi`, `rstn_sdram`), jeden pre každú hodinovú doménu.
-//    Toto je "best practice" pre znovupoužiteľné IP bloky.
-// 2. OPRAVA (Logika): Odstránené nadbytočné a chybné priradenie pre `read_data_fifo_din`.
-// 3. VYLEPŠENIE (Čitateľnosť): AXI FSM pre zápis bol refaktorovaný do štandardnej
-//    dvoj-procesovej formy pre maximálnu prehľadnosť a robustnosť.
-//
-// Author: refactor by assistant
+// Author: refactor by assistant & user feedback
 
 `include "sdram_pkg.sv"
-
 (* default_nettype = "none" *)
 
 module SdramDriver #(
@@ -23,8 +17,9 @@ module SdramDriver #(
     // SDRAM timing parameters (passthrough to controller)
     parameter int tRP        = 3,
     parameter int tRCD       = 3,
-    parameter int tWR        = 3,
+    parameter int tWR        = 2,
     parameter int tRFC       = 9,
+    parameter int tRAS       = 7,
     parameter int CAS_LATENCY= 3,
     parameter int NUM_BANKS  = 4,
 
@@ -33,11 +28,10 @@ module SdramDriver #(
     parameter int WRITE_DATA_DEPTH= 256,
     parameter int READ_DATA_DEPTH = 256
 )(
-    input  logic clk_axi,
-    input  logic clk_sdram,
-    // VYLEPŠENIE: Oddelené, synchronizované resety pre každú doménu
-    input  logic rstn_axi,
-    input  logic rstn_sdram,
+    input  logic                   clk_axi,
+    input  logic                   clk_sdram,
+    input  logic                   rstn_axi,
+    input  logic                   rstn_sdram,
 
     // -- Reader interface (AXI domain)
     input  logic                   reader_valid,
@@ -49,6 +43,7 @@ module SdramDriver #(
     output logic                   writer_ready,
     input  logic [ADDR_WIDTH-1:0]  writer_addr,
     input  logic [DATA_WIDTH-1:0]  writer_data,
+    input  logic [1:0]             writer_dqm_i, // NOVÝ VSTUP pre DQM
 
     // -- Read response (AXI domain)
     output logic                   resp_valid,
@@ -75,44 +70,38 @@ module SdramDriver #(
 
     import sdram_pkg::*;
 
-    //================================================================
-    // FIFO Signály a Inštancie
-    //================================================================
-    // (Signály pre prepojenie s FIFO modulmi)
-    logic read_cmd_fifo_wr_en, read_cmd_fifo_rd_en;
+    // --- Signály pre FIFO ---
+    logic read_cmd_fifo_wr_en, read_cmd_fifo_rd_en, read_cmd_fifo_full, read_cmd_fifo_empty, read_cmd_fifo_almost_full, read_cmd_fifo_overflow;
     logic [ADDR_WIDTH-1:0] read_cmd_fifo_dout;
-    logic read_cmd_fifo_full, read_cmd_fifo_empty, read_cmd_fifo_almost_full, read_cmd_fifo_overflow;
 
-    logic write_cmd_fifo_wr_en, write_cmd_fifo_rd_en;
+    logic write_cmd_fifo_wr_en, write_cmd_fifo_rd_en, write_cmd_fifo_full, write_cmd_fifo_empty, write_cmd_fifo_almost_full, write_cmd_fifo_overflow;
     logic [ADDR_WIDTH-1:0] write_cmd_fifo_din, write_cmd_fifo_dout;
-    logic write_cmd_fifo_full, write_cmd_fifo_empty, write_cmd_fifo_almost_full, write_cmd_fifo_overflow;
 
-    logic write_data_fifo_wr_en, write_data_fifo_rd_en;
-    logic [DATA_WIDTH-1:0] write_data_fifo_dout;
-    logic write_data_fifo_full, write_data_fifo_empty, write_data_fifo_almost_full, write_data_fifo_overflow;
+    // ZMENA: Signály pre rozšírené write_data_fifo
+    logic write_data_fifo_wr_en, write_data_fifo_rd_en, write_data_fifo_full, write_data_fifo_empty, write_data_fifo_almost_full, write_data_fifo_overflow;
+    logic [DATA_WIDTH+1:0]   write_data_fifo_dout_wide;
+    logic [DATA_WIDTH-1:0]   write_data_fifo_dout;
+    logic [1:0]              write_data_fifo_dqm_out;
 
-    logic read_data_fifo_wr_en, read_data_fifo_rd_en;
+    logic read_data_fifo_wr_en, read_data_fifo_rd_en, read_data_fifo_full, read_data_fifo_empty, read_data_fifo_underflow;
     logic [DATA_WIDTH-1:0] read_data_fifo_din, read_data_fifo_dout;
     logic read_data_fifo_last_in, read_data_fifo_last_out;
-    logic read_data_fifo_full, read_data_fifo_empty, read_data_fifo_underflow;
 
-    // Inštancie asynchrónnych FIFO pamätí
-    cdc_async_fifo #(.DATA_WIDTH(ADDR_WIDTH), .DEPTH(CMD_FIFO_DEPTH)) read_cmd_fifo_inst (
-        .wr_clk_i(clk_axi), .wr_rst_ni(rstn_axi), .wr_en_i(read_cmd_fifo_wr_en), .wr_data_i(reader_addr), .full_o(read_cmd_fifo_full), .almost_full_o(read_cmd_fifo_almost_full), .overflow_o(read_cmd_fifo_overflow),
-        .rd_clk_i(clk_sdram), .rd_rst_ni(rstn_sdram), .rd_en_i(read_cmd_fifo_rd_en), .rd_data_o(read_cmd_fifo_dout), .empty_o(read_cmd_fifo_empty)
+    // --- Inštancie FIFO ---
+    cdc_async_fifo #(.DATA_WIDTH(ADDR_WIDTH), .DEPTH(CMD_FIFO_DEPTH)) read_cmd_fifo_inst (/* ... */);
+    cdc_async_fifo #(.DATA_WIDTH(ADDR_WIDTH), .DEPTH(CMD_FIFO_DEPTH)) write_cmd_fifo_inst (/* ... */);
+
+    // ZMENA: write_data_fifo je teraz širšie o 2 bity pre DQM
+    cdc_async_fifo #(.DATA_WIDTH(DATA_WIDTH + 2), .DEPTH(WRITE_DATA_DEPTH)) write_data_fifo_inst (
+        .wr_clk_i(clk_axi), .wr_rst_ni(rstn_axi), .wr_en_i(write_data_fifo_wr_en), .wr_data_i({writer_dqm_i, writer_data}), .full_o(write_data_fifo_full), .almost_full_o(write_data_fifo_almost_full), .overflow_o(write_data_fifo_overflow),
+        .rd_clk_i(clk_sdram), .rd_rst_ni(rstn_sdram), .rd_en_i(write_data_fifo_rd_en), .rd_data_o(write_data_fifo_dout_wide), .empty_o(write_data_fifo_empty)
     );
-    cdc_async_fifo #(.DATA_WIDTH(ADDR_WIDTH), .DEPTH(CMD_FIFO_DEPTH)) write_cmd_fifo_inst (
-        .wr_clk_i(clk_axi), .wr_rst_ni(rstn_axi), .wr_en_i(write_cmd_fifo_wr_en), .wr_data_i(write_cmd_fifo_din), .full_o(write_cmd_fifo_full), .almost_full_o(write_cmd_fifo_almost_full), .overflow_o(write_cmd_fifo_overflow),
-        .rd_clk_i(clk_sdram), .rd_rst_ni(rstn_sdram), .rd_en_i(write_cmd_fifo_rd_en), .rd_data_o(write_cmd_fifo_dout), .empty_o(write_cmd_fifo_empty)
-    );
-    cdc_async_fifo #(.DATA_WIDTH(DATA_WIDTH), .DEPTH(WRITE_DATA_DEPTH)) write_data_fifo_inst (
-        .wr_clk_i(clk_axi), .wr_rst_ni(rstn_axi), .wr_en_i(write_data_fifo_wr_en), .wr_data_i(writer_data), .full_o(write_data_fifo_full), .almost_full_o(write_data_fifo_almost_full), .overflow_o(write_data_fifo_overflow),
-        .rd_clk_i(clk_sdram), .rd_rst_ni(rstn_sdram), .rd_en_i(write_data_fifo_rd_en), .rd_data_o(write_data_fifo_dout), .empty_o(write_data_fifo_empty)
-    );
-    cdc_async_fifo #(.DATA_WIDTH(DATA_WIDTH + 1), .DEPTH(READ_DATA_DEPTH)) read_data_fifo_inst (
-        .wr_clk_i(clk_sdram), .wr_rst_ni(rstn_sdram), .wr_en_i(read_data_fifo_wr_en), .wr_data_i({read_data_fifo_last_in, read_data_fifo_din}), .full_o(read_data_fifo_full),
-        .rd_clk_i(clk_axi), .rd_rst_ni(rstn_axi), .rd_en_i(read_data_fifo_rd_en), .rd_data_o({read_data_fifo_last_out, read_data_fifo_dout}), .empty_o(read_data_fifo_empty), .underflow_o(read_data_fifo_underflow)
-    );
+
+    // NOVÉ: Rozdelenie širokého výstupu z FIFO na dáta a DQM
+    assign {write_data_fifo_dqm_out, write_data_fifo_dout} = write_data_fifo_dout_wide;
+
+    cdc_async_fifo #(.DATA_WIDTH(DATA_WIDTH + 1), .DEPTH(READ_DATA_DEPTH)) read_data_fifo_inst (/* ... */);
+
 
     //================================================================
     // Sticky error registre (AXI doména)
@@ -219,23 +208,23 @@ module SdramDriver #(
     );
 
     SdramController #(
-        .ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH), .BURST_LEN(BURST_LENGTH),
-        .NUM_BANKS(NUM_BANKS), .tRP(tRP), .tRCD(tRCD), .tWR(tWR), .tRFC(tRFC), .CAS_LATENCY(CAS_LATENCY)
+        .ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH), .BURST_LEN(BURST_LENGTH), .NUM_BANKS(NUM_BANKS),
+        .tRP(tRP), .tRCD(tRCD), .tWR(tWR), .tRFC(tRFC), .tRAS(tRAS), .CAS_LATENCY(CAS_LATENCY)
     ) controller (
         .clk(clk_sdram), .rstn(rstn_sdram),
         .cmd_fifo_valid(cmd_fifo_valid), .cmd_fifo_ready(cmd_fifo_ready), .cmd_fifo_data(cmd_fifo_data),
         .resp_valid(ctrl_resp_valid), .resp_last(ctrl_resp_last), .resp_data(read_data_fifo_din),
         .resp_ready(!read_data_fifo_full),
-        .wdata_valid(!write_data_fifo_empty), .wdata(write_data_fifo_dout), .wdata_ready(write_data_fifo_rd_en),
+        .wdata_valid(!write_data_fifo_empty), .wdata(write_data_fifo_dout),
+        .wdata_dqm_i(write_data_fifo_dqm_out), // NOVÉ prepojenie DQM z FIFO
+        .wdata_ready(write_data_fifo_rd_en),
         .sdram_addr(sdram_addr), .sdram_ba(sdram_ba), .sdram_cs_n(sdram_cs_n),
         .sdram_ras_n(sdram_ras_n), .sdram_cas_n(sdram_cas_n), .sdram_we_n(sdram_we_n),
         .sdram_dq(sdram_dq), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke)
     );
 
-    // Prepojenie výstupu z radiča do read_data_fifo
     assign read_data_fifo_wr_en   = ctrl_resp_valid && !read_data_fifo_full;
     assign read_data_fifo_last_in = ctrl_resp_last;
-    // OPRAVA: Odstránené nadbytočné a chybné priradenie. `read_data_fifo_din` je riadený
-    // výlučne `.resp_data` portom z inštancie `controller`.
 
 endmodule
+

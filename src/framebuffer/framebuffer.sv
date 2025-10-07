@@ -26,6 +26,7 @@ module FramebufferController #(
     input  logic [9:0]       vga_req_y_i, // Vertikálna pozícia (0-599)
     output logic [15:0]      vga_pixel_data_o,
     output logic             vga_pixel_valid_o,
+    input  logic             vga_pixel_ready_i,
 
     // --- Riadiace signály ---
     input  logic             ctrl_start_fill_i, // Impulz na spustenie plnenia back buffera
@@ -48,7 +49,9 @@ module FramebufferController #(
     input  logic             sdram_resp_valid_i,
     input  logic             sdram_resp_last_i,
     input  logic [15:0]      sdram_resp_data_i,
-    output logic             sdram_resp_ready_o
+    output logic             sdram_resp_ready_o,
+    output logic debug_fifo_full_o,
+    output logic status_reading_o // Ladiaci signál
 );
 
    import sdram_pkg::*;
@@ -77,6 +80,9 @@ module FramebufferController #(
     end
     assign back_buffer_addr = fb_base_addr[0];
 //    assign back_buffer_addr = fb_base_addr[~front_buffer_idx];
+
+assign status_reading_o = (rd_state != RD_IDLE);
+assign debug_fifo_full_o = line_fifo_full;
 
     //================================================================
     // Zapisovacia Cesta (Plnenie Back Buffera)
@@ -160,7 +166,8 @@ module FramebufferController #(
     // Priame prepojenie FIFO -> VGA
     assign vga_pixel_data_o  = line_fifo_rdata;
     assign vga_pixel_valid_o = !line_fifo_empty;
-    assign line_fifo_rd_en = !line_fifo_empty; // VGA vždy chce dáta, pokiaľ nie sú prázdne
+//    assign line_fifo_rd_en = !line_fifo_empty; // VGA vždy chce dáta, pokiaľ nie sú prázdne
+    assign line_fifo_rd_en = !line_fifo_empty && vga_pixel_ready_i;
 
     // --- Logika preaktívneho čítania (Prefetcher) ---
     typedef enum logic [0:0] { RD_IDLE, RD_PREFETCH } rd_state_t;
