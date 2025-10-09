@@ -8,7 +8,10 @@
 //
 // Author: refactor by assistant & user feedback
 
-`include "sdram_pkg.sv"
+`ifndef SDRAM_ARBITER_SV
+`define SDRAM_ARBITER_SV
+
+//`include "sdram_pkg.sv"
 
 (* default_nettype = "none" *)
 
@@ -148,3 +151,6 @@ module SdramCmdArbiter #(
         $error("[%0t] SVA FAIL @ %m: Both reader_ready and writer_ready asserted!", $time);
 
 endmodule
+
+
+`endif

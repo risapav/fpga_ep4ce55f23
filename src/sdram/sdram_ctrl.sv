@@ -9,8 +9,10 @@
 //    potenciálne "off-by-one" chyby pri ukončení burstu.
 //
 // Author: refactor by assistant & user feedback
+`ifndef SDRAM_CTRL_SV
+`define SDRAM_CTRL_SV
 
-`include "sdram_pkg.sv"
+//`include "sdram_pkg.sv"
 (* default_nettype = "none" *)
 
 module SdramController #(
@@ -47,7 +49,9 @@ module SdramController #(
     output logic                   sdram_we_n,
     inout  wire  [DATA_WIDTH-1:0]  sdram_dq,
     output logic [1:0]             sdram_dqm,
-    output logic                   sdram_cke
+    output logic                   sdram_cke,
+
+    output state_t       debug_state_o // Pre debugovanie stavu riadiaceho FSM
 );
 
     import sdram_pkg::*;
@@ -259,6 +263,11 @@ module SdramController #(
     assign resp_data  = read_pipe_data[CAS_LATENCY-1];
     assign sdram_dq   = (dq_write_enable) ? wdata : {DATA_WIDTH{1'bz}};
 
+    assign debug_state_o = state_reg;
+
 endmodule
 
 `default_nettype wire
+
+
+`endif

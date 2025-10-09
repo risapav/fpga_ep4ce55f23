@@ -7,7 +7,10 @@
 //
 // Author: refactor by assistant & user feedback
 
-`include "sdram_pkg.sv"
+`ifndef SDRAM_DRIVER_SV
+`define SDRAM_DRIVER_SV
+
+//`include "sdram_pkg.sv"
 (* default_nettype = "none" *)
 
 module SdramDriver #(
@@ -65,7 +68,9 @@ module SdramDriver #(
     output logic                   sdram_we_n,
     inout  wire  [DATA_WIDTH-1:0]  sdram_dq,
     output logic [1:0]             sdram_dqm,
-    output logic                   sdram_cke
+    output logic                   sdram_cke,
+
+    output logic [4:0]   controller_state_o
 );
 
     import sdram_pkg::*;
@@ -102,7 +107,9 @@ module SdramDriver #(
 
     cdc_async_fifo #(.DATA_WIDTH(DATA_WIDTH + 1), .DEPTH(READ_DATA_DEPTH)) read_data_fifo_inst (/* ... */);
 
-
+// diagnostika stavu riadiaceho FSM
+logic [4:0] ctrl_state_w;
+assign controller_state_o = ctrl_state_w;
     //================================================================
     // Sticky error registre (AXI doména)
     //================================================================
@@ -220,7 +227,9 @@ module SdramDriver #(
         .wdata_ready(write_data_fifo_rd_en),
         .sdram_addr(sdram_addr), .sdram_ba(sdram_ba), .sdram_cs_n(sdram_cs_n),
         .sdram_ras_n(sdram_ras_n), .sdram_cas_n(sdram_cas_n), .sdram_we_n(sdram_we_n),
-        .sdram_dq(sdram_dq), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke)
+        .sdram_dq(sdram_dq), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke),
+
+        .debug_state_o(ctrl_state_w)
     );
 
     assign read_data_fifo_wr_en   = ctrl_resp_valid && !read_data_fifo_full;
@@ -228,3 +237,4 @@ module SdramDriver #(
 
 endmodule
 
+`endif

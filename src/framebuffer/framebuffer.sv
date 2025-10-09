@@ -1,264 +1,240 @@
-//navrhneme modul
-// Documents
-// FramebufferController.sv
-// Autor: Vasilyev Denis
-// Popis: Modul na riadenie dvojitého framebufferu s AXI rozhraním k SDRAM
-//         Podporuje režimy 800x600 @60Hz, 640x480 @60Hz
-//         a jednoduché FIFO pre line buffer
-// Verzia: 1.1 - Refaktoring a oprava chýb
-// Dátum: 2025-09-26
-module FramebufferController #(
-    parameter H_RES = 800,
-    parameter V_RES = 600,
-    parameter FB0_BASE_ADDR = 24'h000000,
-    parameter FB1_BASE_ADDR = 24'h080000
+`ifndef FRAMEBUFFER_CTRL_SV
+`define FRAMEBUFFER_CTRL_SV
+
+(* default_nettype = "none" *)
+import vga_pkg::*;
+import axi_pkg::*;
+import axis_streamer_pkg::*;
+//`include "sdram_driver.sv" // Vložíme driver priamo sem pre jednoduchosť
+
+module framebuffer_ctrl #(
+    parameter int H_RES = 800,
+    parameter int V_RES = 600,
+    // Parametre pre SDRAM časovanie (môžu sa líšiť podľa čipu)
+    parameter int tRP        = 3,
+    parameter int tRCD       = 3,
+    parameter int tWR        = 2,
+    parameter int tRFC       = 9,
+    parameter int tRAS       = 7,
+    parameter int CAS_LATENCY= 3
 )(
-    input  logic clk_i, // Predpokladáme jednu hodinovú doménu (clk_axi z Drivera)
-    input  logic rst_ni,
+    // --- Hodinové domény a resety ---
+    input  logic axi_clk_i,
+    input  logic axi_rst_ni,
+    input  logic sdram_clk_i,
+    input  logic sdram_rst_ni,
 
-    // --- Rozhranie pre vstup pixelov (od zdroja obrazu) ---
-    input  logic             pixel_in_valid_i,
-    output logic             pixel_in_ready_o,
-    input  logic [15:0]      pixel_in_data_i, // RGB 565
+    // --- Video Stream Porty ---
+    axi4s_if.slave  s_axis_video_in,
+    axi4s_if.master m_axis_video_out,
 
-    // --- Rozhranie pre VGA Zobrazovač ---
-    input  logic [9:0]       vga_req_x_i, // Horizontálna pozícia (0-799)
-    input  logic [9:0]       vga_req_y_i, // Vertikálna pozícia (0-599)
-    output logic [15:0]      vga_pixel_data_o,
-    output logic             vga_pixel_valid_o,
-    input  logic             vga_pixel_ready_i,
+    // --- SDRAM Porty ---
+    output logic [12:0]  sdram_addr,
+    output logic [1:0]   sdram_ba,
+    output logic         sdram_cs_n,
+    output logic         sdram_ras_n,
+    output logic         sdram_cas_n,
+    output logic         sdram_we_n,
+    inout  wire  [15:0]  sdram_dq,
+    output logic [1:0]   sdram_dqm,
+    output logic         sdram_cke,
+    output logic         sdram_clk,
 
-    // --- Riadiace signály ---
-    input  logic             ctrl_start_fill_i, // Impulz na spustenie plnenia back buffera
-    input  logic             ctrl_swap_buffers_i, // Impulz na prehodenie bufferov
-    output logic             status_busy_filling_o, // Indikátor, že prebieha plnenie
-
-    // --- Rozhranie k SdramDriver (AXI strana) ---
-    // Writer port
-    output logic             sdram_writer_valid_o,
-    input  logic             sdram_writer_ready_i,
-    output logic [23:0]      sdram_writer_addr_o,
-    output logic [15:0]      sdram_writer_data_o,
-
-    // Reader port
-    output logic             sdram_reader_valid_o,
-    input  logic             sdram_reader_ready_i,
-    output logic [23:0]      sdram_reader_addr_o,
-
-    // Read response port
-    input  logic             sdram_resp_valid_i,
-    input  logic             sdram_resp_last_i,
-    input  logic [15:0]      sdram_resp_data_i,
-    output logic             sdram_resp_ready_o,
-    output logic debug_fifo_full_o,
-    output logic status_reading_o // Ladiaci signál
+    // --- Diagnostika ---
+    output logic [7:0] debug_led_o
 );
 
-   import sdram_pkg::*;
+    // =========================================================================
+    // Konfigurácia Double Bufferingu
+    // =========================================================================
+    localparam int ADDR_WIDTH = 24;
+    localparam int FRAME_SIZE = H_RES * V_RES;
+    localparam logic [ADDR_WIDTH-1:0] BUFFER_0_BASE_ADDR = 0;
+    localparam logic [ADDR_WIDTH-1:0] BUFFER_1_BASE_ADDR = FRAME_SIZE;
 
-    // --- Konštanty ---
-    localparam FRAME_SIZE = H_RES * V_RES;
-    // VYLEPŠENIE: Použitie importovaného BURST_LEN z balíčka sdram_pkg
-    localparam int NUM_WRITE_BURSTS = (FRAME_SIZE + BURST_LEN - 1) / BURST_LEN;
+    // Register, ktorý určuje, do ktorého bufferu sa zapisuje (0 alebo 1)
+    logic write_buffer_is_0_reg;
+    logic [ADDR_WIDTH-1:0] write_buffer_base_addr;
+    logic [ADDR_WIDTH-1:0] read_buffer_base_addr;
 
-    localparam LINE_BUFFER_DEPTH = H_RES * 2; // Buffer na 2 riadky pre bezpečnosť
+    // =========================================================================
+    // Inštancia SDRAM Drivera
+    // =========================================================================
+    // Signály prepojenia na driver
+    logic                  sdram_reader_valid, sdram_reader_ready;
+    logic [ADDR_WIDTH-1:0] sdram_reader_addr;
+    logic                  sdram_writer_valid, sdram_writer_ready;
+    logic [ADDR_WIDTH-1:0] sdram_writer_addr;
+    logic [15:0]           sdram_writer_data;
+    logic                  sdram_resp_valid, sdram_resp_last;
+    logic [15:0]           sdram_resp_data;
 
-    // --- Logika dvojitého bufferovania ---
-    logic front_buffer_idx; // 0 alebo 1
-    logic [ADDR_WIDTH-1:0] fb_base_addr [0:1];
-    logic [ADDR_WIDTH-1:0] back_buffer_addr;
+    SdramDriver #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(16),
+        .BURST_LENGTH(8),
+        .tRP(tRP), .tRCD(tRCD), .tWR(tWR), .tRFC(tRFC), .tRAS(tRAS), .CAS_LATENCY(CAS_LATENCY)
+    ) u_sdram_driver (
+        .clk_axi(axi_clk_i),
+        .clk_sdram(sdram_clk_i),
+        .rstn_axi(axi_rst_ni),
+        .rstn_sdram(sdram_rst_ni),
 
-    initial begin
-        fb_base_addr[0] = FB0_BASE_ADDR;
-        fb_base_addr[1] = FB1_BASE_ADDR;
-    end
+        // Reader interface
+        .reader_valid(sdram_reader_valid),
+        .reader_ready(sdram_reader_ready),
+        .reader_addr(sdram_reader_addr),
 
-    // OPRAVA: Použité správne názvy portov clk_i a rst_ni
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (!rst_ni) front_buffer_idx <= 1'b0;
-//        else if (ctrl_swap_buffers_i) front_buffer_idx <= ~front_buffer_idx;
-    end
-    assign back_buffer_addr = fb_base_addr[0];
-//    assign back_buffer_addr = fb_base_addr[~front_buffer_idx];
+        // Writer interface
+        .writer_valid(sdram_writer_valid),
+        .writer_ready(sdram_writer_ready),
+        .writer_addr(sdram_writer_addr),
+        .writer_data(sdram_writer_data),
+        .writer_dqm_i(2'b00), // DQM nevyužívame
 
-assign status_reading_o = (rd_state != RD_IDLE);
-assign debug_fifo_full_o = line_fifo_full;
+        // Read response
+        .resp_valid(sdram_resp_valid),
+        .resp_last(sdram_resp_last),
+        .resp_data(sdram_resp_data),
+        .resp_ready(m_axis_video_out.TREADY),
 
-    //================================================================
-    // Zapisovacia Cesta (Plnenie Back Buffera)
-    //================================================================
-    typedef enum logic [1:0] { WR_IDLE, WR_SEND_ADDR, WR_SEND_DATA } wr_state_t;
-    wr_state_t wr_state;
-    logic [$clog2(NUM_WRITE_BURSTS):0] wr_burst_count;
-    logic [$clog2(BURST_LEN)-1:0]     wr_data_count;
+        // Error monitoring
+        .error_overflow_o(debug_led_o[6]),
+        .error_underflow_o(debug_led_o[7]),
+        .error_clear_i(1'b0),
 
-    // --- Zapisovací FSM ---
-    // OPRAVA: Použité správne názvy portov clk_i a rst_ni
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (!rst_ni) begin
-            wr_state <= WR_IDLE;
-            wr_burst_count <= '0;
-            wr_data_count <= '0;
-        end else begin
-            case (wr_state)
-                WR_IDLE: begin
-                    if (ctrl_start_fill_i) begin
-                        wr_state <= WR_SEND_ADDR;
-                        wr_burst_count <= '0;
-                    end
-                end
-                WR_SEND_ADDR: begin
-                    if (sdram_writer_valid_o && sdram_writer_ready_i) begin
-                        wr_state <= WR_SEND_DATA;
-                        wr_data_count <= '0;
-                    end
-                end
-                WR_SEND_DATA: begin
-                    if (sdram_writer_valid_o && sdram_writer_ready_i) begin
-                        if (wr_data_count == BURST_LEN - 1) begin
-                            if (wr_burst_count == NUM_WRITE_BURSTS - 1) begin
-                                wr_state <= WR_IDLE; // Hotovo
-                            end else begin
-                                wr_state <= WR_SEND_ADDR;
-                                wr_burst_count <= wr_burst_count + 1;
-                            end
-                        end else begin
-                            wr_data_count <= wr_data_count + 1;
-                        end
-                    end
-                end
-                // VYLEPŠENIE: Defenzívna vetva pre prípad nelegálneho stavu
-                default: begin
-                    wr_state <= WR_IDLE;
-                end
-            endcase
-        end
-    end
+        // SDRAM physical pins
+        .sdram_addr,
+        .sdram_ba,
+        .sdram_cs_n,
+        .sdram_ras_n,
+        .sdram_cas_n,
+        .sdram_we_n,
+        .sdram_dq,
+        .sdram_dqm,
+        .sdram_cke,
 
-    // --- Kombinačná logika pre zápis ---
-    assign sdram_writer_addr_o = back_buffer_addr + (wr_burst_count * BURST_LEN);
-    assign sdram_writer_data_o = pixel_in_data_i;
-    assign pixel_in_ready_o = (wr_state == WR_SEND_DATA) && sdram_writer_ready_i;
-    assign sdram_writer_valid_o = (wr_state == WR_SEND_ADDR) || (wr_state == WR_SEND_DATA && pixel_in_valid_i);
-    assign status_busy_filling_o = (wr_state != WR_IDLE);
-
-    //================================================================
-    // Čítacia Cesta (Poskytovanie dát pre VGA)
-    //================================================================
-
-    // --- Line Buffer FIFO ---
-    logic line_fifo_wr_en, line_fifo_rd_en, line_fifo_full, line_fifo_empty;
-    logic [DATA_WIDTH-1:0] line_fifo_wdata, line_fifo_rdata;
-
-    // POZNÁMKA: Používa sa vylepšený Fifo modul s registrovaným výstupom (viď nižšie)
-    Fifo #( .WIDTH(DATA_WIDTH), .DEPTH(LINE_BUFFER_DEPTH) )
-    line_buffer_fifo (
-        .clk(clk_i), .rstn(rst_ni), // Správne názvy portov
-        .wr_en(line_fifo_wr_en), .wr_data(line_fifo_wdata), .full(line_fifo_full),
-        .rd_en(line_fifo_rd_en), .rd_data(line_fifo_rdata), .empty(line_fifo_empty)
+        //diagnostika
+        .controller_state_o(debug_led_o[4:0])
     );
+    // Priame priradenie hodín na SDRAM pin
+    assign sdram_clk = sdram_clk_i;
 
-    // Priame prepojenie SDRAM response -> FIFO
-    assign line_fifo_wdata = sdram_resp_data_i;
-    assign line_fifo_wr_en = sdram_resp_valid_i && !line_fifo_full;
-    assign sdram_resp_ready_o = !line_fifo_full;
 
-    // Priame prepojenie FIFO -> VGA
-    assign vga_pixel_data_o  = line_fifo_rdata;
-    assign vga_pixel_valid_o = !line_fifo_empty;
-//    assign line_fifo_rd_en = !line_fifo_empty; // VGA vždy chce dáta, pokiaľ nie sú prázdne
-    assign line_fifo_rd_en = !line_fifo_empty && vga_pixel_ready_i;
+    // =========================================================================
+    // Logika Zapisovania (Writer) - (AXI Stream -> SDRAM)
+    // =========================================================================
+    logic [$clog2(H_RES)-1:0] wr_x_cnt;
+    logic [$clog2(V_RES)-1:0] wr_y_cnt;
+    logic frame_write_done;
 
-    // --- Logika preaktívneho čítania (Prefetcher) ---
-    typedef enum logic [0:0] { RD_IDLE, RD_PREFETCH } rd_state_t;
-    rd_state_t rd_state;
-
-    logic [$clog2(V_RES)-1:0] prefetched_y; // Riadok, ktorý sme naposledy žiadali
-    logic [$clog2(H_RES/BURST_LEN):0] prefetch_burst_count;
-
-    // --- Prefetcher FSM ---
-    // OPRAVA: Použité správne názvy portov clk_i a rst_ni
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (!rst_ni) begin
-            rd_state <= RD_IDLE;
-            prefetched_y <= '1; // Inicializácia na neplatnú hodnotu, aby sa prvý riadok (0) načítal
-            prefetch_burst_count <= '0;
+    always_ff @(posedge axi_clk_i or negedge axi_rst_ni) begin
+        if (!axi_rst_ni) begin
+            wr_x_cnt <= '0;
+            wr_y_cnt <= '0;
+            write_buffer_is_0_reg <= 1'b1; // Začíname zapisovať do buffera 0
         end else begin
-            case (rd_state)
-                RD_IDLE: begin
-                    // Spustíme prefetch, keď VGA žiada nový riadok, a máme miesto v FIFO
-                    if (vga_req_y_i != prefetched_y && !line_fifo_full) begin
-                        rd_state <= RD_PREFETCH;
-                        prefetched_y <= vga_req_y_i;
-                        prefetch_burst_count <= '0;
+            // Logika počítadiel X a Y pre zápis
+            if (s_axis_video_in.TVALID && s_axis_video_in.TREADY) begin
+                if (wr_x_cnt == H_RES - 1) begin
+                    wr_x_cnt <= 0;
+                    if (wr_y_cnt == V_RES - 1) begin
+                        wr_y_cnt <= 0;
+                    end else begin
+                        wr_y_cnt <= wr_y_cnt + 1;
                     end
+                end else begin
+                    wr_x_cnt <= wr_x_cnt + 1;
                 end
-                RD_PREFETCH: begin
-                    if (sdram_reader_valid_o && sdram_reader_ready_i) begin
-                        if (prefetch_burst_count == (H_RES / BURST_LEN) - 1) begin
-                            rd_state <= RD_IDLE; // Načítali sme celý riadok
-                        end else begin
-                            prefetch_burst_count <= prefetch_burst_count + 1;
-                        end
-                    end
-                end
-                // VYLEPŠENIE: Defenzívna vetva pre prípad nelegálneho stavu
-                default: begin
-                    rd_state <= RD_IDLE;
-                end
-            endcase
-        end
-    end
-
-   // --- Kombinačná logika pre čítanie ---
-    assign sdram_reader_addr_o = fb_base_addr[front_buffer_idx] + (prefetched_y * H_RES) + (prefetch_burst_count * BURST_LEN);
-    assign sdram_reader_valid_o = (rd_state == RD_PREFETCH);
-
-endmodule
-
-
-// ====================================================================================
-// Vylepšené FIFO s registrovaným výstupom pre lepší timing
-// ====================================================================================
-module Fifo #(parameter WIDTH=16, DEPTH=1024) (
-    input  logic             clk,
-    input  logic             rstn,
-    input  logic             wr_en,
-    input  logic [WIDTH-1:0] wr_data,
-    output logic             full,
-    input  logic             rd_en,
-    output logic [WIDTH-1:0] rd_data,
-    output logic             empty
-);
-    localparam ADDR_WIDTH = $clog2(DEPTH);
-    logic [WIDTH-1:0] mem [0:DEPTH-1];
-    logic [ADDR_WIDTH:0] wr_ptr, rd_ptr;
-
-    assign empty = (wr_ptr == rd_ptr);
-    assign full = (wr_ptr[ADDR_WIDTH-1:0] == rd_ptr[ADDR_WIDTH-1:0]) && (wr_ptr[ADDR_WIDTH] != rd_ptr[ADDR_WIDTH]);
-
-    // ODSTRÁNENÉ: Kombinačný výstup nahradený registrovaným pre lepšie časovanie.
-    // assign rd_data = mem[rd_ptr[ADDR_WIDTH-1:0]];
-
-    always_ff @(posedge clk or negedge rstn) begin
-        if (!rstn) begin
-            wr_ptr <= '0;
-            rd_ptr <= '0;
-            rd_data <= '0; // VYLEPŠENIE: Inicializácia výstupného registra
-        end else begin
-            // Zapisovacia logika zostáva rovnaká
-            if (wr_en && !full) begin
-                mem[wr_ptr[ADDR_WIDTH-1:0]] <= wr_data;
-                wr_ptr <= wr_ptr + 1;
             end
 
-            // VYLEPŠENIE: Logika čítania teraz registruje výstupné dáta
-            if (rd_en && !empty) begin
-                // 1. Načítať dáta z aktuálnej adresy do výstupného registra
-                rd_data <= mem[rd_ptr[ADDR_WIDTH-1:0]];
-                // 2. Až potom inkrementovať pointer pre ďalší cyklus
-                rd_ptr <= rd_ptr + 1;
+            // Prehodenie bufferov po dokončení zápisu snímku
+            if (frame_write_done) begin
+                write_buffer_is_0_reg <= ~write_buffer_is_0_reg;
             end
         end
     end
+
+    assign frame_write_done = s_axis_video_in.TVALID && s_axis_video_in.TREADY && s_axis_video_in.TLAST;
+
+    // Kombinačná logika pre Writer
+    assign sdram_writer_addr = write_buffer_base_addr + (wr_y_cnt * H_RES) + wr_x_cnt;
+    assign sdram_writer_data = s_axis_video_in.TDATA;
+
+    // Handshake
+    assign sdram_writer_valid = s_axis_video_in.TVALID;
+    assign s_axis_video_in.TREADY = sdram_writer_ready;
+
+    // =========================================================================
+    // Logika Čítania (Reader) - (SDRAM -> AXI Stream)
+    // =========================================================================
+    logic [$clog2(H_RES)-1:0] rd_x_cnt;
+    logic [$clog2(V_RES)-1:0] rd_y_cnt;
+    logic reading_active;
+
+    always_ff @(posedge axi_clk_i or negedge axi_rst_ni) begin
+        if (!axi_rst_ni) begin
+            rd_x_cnt <= '0;
+            rd_y_cnt <= '0;
+            reading_active <= 1'b0;
+        end else begin
+            // Aktivujeme čítanie, keď je downstream modul pripravený po prvýkrát
+            if (m_axis_video_out.TREADY && !reading_active) begin
+                reading_active <= 1'b1;
+            end
+
+            // Logika počítadiel X a Y pre čítanie
+            // Posúvame sa na ďalší pixel, keď boli aktuálne dáta úspešne poslané
+            if (m_axis_video_out.TVALID && m_axis_video_out.TREADY) begin
+                if (rd_x_cnt == H_RES - 1) begin
+                    rd_x_cnt <= 0;
+                    if (rd_y_cnt == V_RES - 1) begin
+                        rd_y_cnt <= 0;
+                        reading_active <= 1'b0; // Dokončili sme čítanie, čakáme na ďalší frame
+                    end else begin
+                        rd_y_cnt <= rd_y_cnt + 1;
+                    end
+                end else begin
+                    rd_x_cnt <= rd_x_cnt + 1;
+                end
+            end
+        end
+    end
+
+    // Kombinačná logika pre Reader
+    assign sdram_reader_addr = read_buffer_base_addr + (rd_y_cnt * H_RES) + rd_x_cnt;
+
+    // Handshake
+    assign sdram_reader_valid = reading_active && !sdram_resp_valid; // Žiadame o dáta, ak sme aktívni a nemáme platné dáta
+
+    // Výstupný stream je priamo riadený odpoveďou z SDRAM drivera
+    assign m_axis_video_out.TVALID = sdram_resp_valid;
+    assign m_axis_video_out.TDATA  = sdram_resp_data;
+    assign m_axis_video_out.TLAST  = (rd_x_cnt == H_RES - 1) && (rd_y_cnt == V_RES - 1);
+    assign m_axis_video_out.TUSER  = 1'b0; // TUSER sa zvyčajne nepoužíva pre VGA
+
+
+    // =========================================================================
+    // Logika výberu bufferov
+    // =========================================================================
+    assign write_buffer_base_addr = (write_buffer_is_0_reg) ? BUFFER_0_BASE_ADDR : BUFFER_1_BASE_ADDR;
+    assign read_buffer_base_addr  = (write_buffer_is_0_reg) ? BUFFER_1_BASE_ADDR : BUFFER_0_BASE_ADDR;
+
+
+    // =========================================================================
+    // Diagnostika
+    // =========================================================================
+/*
+    assign debug_led_o[0] = s_axis_video_in.TVALID;
+    assign debug_led_o[1] = s_axis_video_in.TREADY;
+    assign debug_led_o[2] = m_axis_video_out.TVALID;
+    assign debug_led_o[3] = m_axis_video_out.TREADY;
+    assign debug_led_o[4] = write_buffer_is_0_reg;
+    assign debug_led_o[5] = reading_active;
+*/
+
+    assign debug_led_o[5] = reading_active;
+
 endmodule
+
+`endif

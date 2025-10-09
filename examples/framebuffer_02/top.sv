@@ -124,16 +124,10 @@ module top (
       .m_axis_video_out(fb_to_vga_if),    // Výstup do VGA premosťovača
 
       // Pripojenie na fyzické SDRAM piny
-      .sdram_dq(SDRAM_DQ),
-      .sdram_addr(SDRAM_ADDR),
-      .sdram_ba(SDRAM_BA),
-      .sdram_cas_n(SDRAM_CAS_N),
-      .sdram_cke(SDRAM_CKE),
-      .sdram_clk(SDRAM_CLK),
-      .sdram_cs_n(SDRAM_CS_N),
-      .sdram_we_n(SDRAM_WE_N),
-      .sdram_ras_n(SDRAM_RAS_N),
-      .sdram_dqm({SDRAM_UDQM, SDRAM_LDQM}),
+      .SDRAM_DQ(SDRAM_DQ), .SDRAM_ADDR(SDRAM_ADDR), .SDRAM_BA(SDRAM_BA),
+      .SDRAM_CAS_N(SDRAM_CAS_N), .SDRAM_CKE(SDRAM_CKE), .SDRAM_CLK(SDRAM_CLK),
+      .SDRAM_CS_N(SDRAM_CS_N), .SDRAM_WE_N(SDRAM_WE_N), .SDRAM_RAS_N(SDRAM_RAS_N),
+      .SDRAM_UDQM(SDRAM_UDQM), .SDRAM_LDQM(SDRAM_LDQM),
 
       // Diagnostika
       .debug_led_o(LED_J11)
