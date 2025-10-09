@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>cdc_async_fifo</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-cdc_async_fifo">Modul <code>cdc_async_fifo</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Asynchrónny FIFO buffer s oddelenými hodinovými doménami pre zápis a čítanie.</p>
+<p>Modul implementuje FIFO s nezávislými hodinovými doménami zápisu a čítania,
+ktorý zabezpečuje správnu synchronizáciu medzi doménami pomocou gray kódu a
+dvojstupňových synchronizátorov. Podporuje signály almost_full a almost_empty
+s nastaviteľnými prahmi, vrátane detekcie pretečenia a podtečenia.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: DATA_WIDTH                Šírka dátového slova vo FIFO (bity).</li>
+<li><code>[in]</code>: DEPTH                     Hĺbka FIFO, počet uložených prvkov.</li>
+<li><code>[in]</code>: ALMOST_FULL_THRESHOLD     Prah pre signál almost_full (počet voľných miest).</li>
+<li><code>[in]</code>: ALMOST_EMPTY_THRESHOLD    Prah pre signál almost_empty (počet obsadených miest).</li>
+<li><code>[in]</code>: ADDR_WIDTH                Počet bitov na adresovanie FIFO (vypočítané z DEPTH).</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wr_clk_i</code></td>
+<td>Hodinový signál zápisovej domény.</td>
+</tr>
+<tr>
+<td><code>wr_rst_ni</code></td>
+<td>Asynchrónny reset zápisovej domény, aktívny v log.0.</td>
+</tr>
+<tr>
+<td><code>wr_en_i</code></td>
+<td>Povolenie zápisu dát do FIFO.</td>
+</tr>
+<tr>
+<td><code>wr_data_i</code></td>
+<td>Dáta pre zápis do FIFO.</td>
+</tr>
+<tr>
+<td><code>rd_clk_i</code></td>
+<td>Hodinový signál čítacej domény.</td>
+</tr>
+<tr>
+<td><code>rd_rst_ni</code></td>
+<td>Asynchrónny reset čítacej domény, aktívny v log.0.</td>
+</tr>
+<tr>
+<td><code>rd_en_i</code></td>
+<td>Povolenie čítania dát z FIFO.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>full_o</code></td>
+<td>Indikácia plného FIFO v zápisovej doméne.</td>
+</tr>
+<tr>
+<td><code>almost_full_o</code></td>
+<td>Indikácia takmer plného FIFO.</td>
+</tr>
+<tr>
+<td><code>overflow_o</code></td>
+<td>Indikácia pretečenia FIFO pri zápise.</td>
+</tr>
+<tr>
+<td><code>rd_data_o</code></td>
+<td>Dáta čítané z FIFO.</td>
+</tr>
+<tr>
+<td><code>empty_o</code></td>
+<td>Indikácia prázdneho FIFO v čítacej doméne.</td>
+</tr>
+<tr>
+<td><code>almost_empty_o</code></td>
+<td>Indikácia takmer prázdneho FIFO.</td>
+</tr>
+<tr>
+<td><code>underflow_o</code></td>
+<td>Indikácia podtečenia FIFO pri čítaní.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">cdc_async_fifo #(
+.DATA_WIDTH(32),
+.DEPTH(512),
+.ALMOST_FULL_THRESHOLD(32),
+.ALMOST_EMPTY_THRESHOLD(32)
+) u_async_fifo (
+.wr_clk_i(wr_clk),
+.wr_rst_ni(wr_rst_n),
+.wr_en_i(wr_en),
+.wr_data_i(wr_data),
+.full_o(full),
+.almost_full_o(almost_full),
+.overflow_o(overflow),
+.rd_clk_i(rd_clk),
+.rd_rst_ni(rd_rst_n),
+.rd_en_i(rd_en),
+.rd_data_o(rd_data),
+.empty_o(empty),
+.almost_empty_o(almost_empty),
+.underflow_o(underflow)
+);
+</code></pre>
+</body>
+</html>

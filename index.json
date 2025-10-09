@@ -1,0 +1,170 @@
+[
+  {
+    "module": "seven_seg_decoder",
+    "source": "utils/seven_seg_decoder.sv",
+    "brief": "",
+    "doc": "utils/seven_seg_decoder.md"
+  },
+  {
+    "module": "vga_timing_generator",
+    "source": "utils/vga_timing_generator.sv",
+    "brief": "",
+    "doc": "utils/vga_timing_generator.md"
+  },
+  {
+    "module": "cdc_async_fifo",
+    "source": "cdc/cdc_async_fifo.sv",
+    "brief": "Asynchrónny FIFO buffer s oddelenými hodinovými doménami pre zápis a čítanie.",
+    "doc": "cdc/cdc_async_fifo.md"
+  },
+  {
+    "module": "cdc_two_flop_synchronizer",
+    "source": "cdc/cdc_two_flop_synchronizer.sv",
+    "brief": "Dvojstupňový synchronizátor signálu pre CDC (Clock Domain Crossing).",
+    "doc": "cdc/cdc_two_flop_synchronizer.md"
+  },
+  {
+    "module": "cdc_reset_synchronizer",
+    "source": "cdc/cdc_reset_synchronizer.sv",
+    "brief": "Synchronizátor asynchrónneho resetu pre cieľovú hodinovú doménu.",
+    "doc": "cdc/cdc_reset_synchronizer.md"
+  },
+  {
+    "module": "framebuffer_ctrl",
+    "source": "framebuffer/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer/framebuffer_ctrl.md"
+  },
+  {
+    "module": "FramebufferController",
+    "source": "framebuffer_02/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer_02/FramebufferController.md"
+  },
+  {
+    "module": "Fifo",
+    "source": "framebuffer_02/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer_02/Fifo.md"
+  },
+  {
+    "module": "SdramCmdArbiter",
+    "source": "sdram/sdram_arbiter.sv",
+    "brief": "",
+    "doc": "sdram/SdramCmdArbiter.md"
+  },
+  {
+    "module": "SimpleSdramTester",
+    "source": "sdram/simple_sdram_tester.sv",
+    "brief": "",
+    "doc": "sdram/SimpleSdramTester.md"
+  },
+  {
+    "module": "AxiStreamToSdramWrite",
+    "source": "sdram/axis_to_sdram.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamToSdramWrite.md"
+  },
+  {
+    "module": "SdramDriver",
+    "source": "sdram/sdram_driver.sv",
+    "brief": "",
+    "doc": "sdram/SdramDriver.md"
+  },
+  {
+    "module": "parameters",
+    "source": "sdram/sdram_driver.sv",
+    "brief": "",
+    "doc": "sdram/parameters.md"
+  },
+  {
+    "module": "SdramToAxiStreamRead",
+    "source": "sdram/sdram_to_axis.sv",
+    "brief": "",
+    "doc": "sdram/SdramToAxiStreamRead.md"
+  },
+  {
+    "module": "AxiStreamSdramVgaTopDualBuffer",
+    "source": "sdram/axis_sdram_vga_dualbuffer.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramVgaTopDualBuffer.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl.sv",
+    "brief": "",
+    "doc": "sdram/SdramController.md"
+  },
+  {
+    "module": "my_axi_peripheral",
+    "source": "axi/axi_interfaces.sv",
+    "brief": "Definície AXI rozhraní (AXI4, AXI4-Lite, AXI4-Stream) pre použitie v SoC dizajne.",
+    "doc": "axi/my_axi_peripheral.md"
+  },
+  {
+    "module": "rgb565_to_rgb888",
+    "source": "vga/rgb565_to_rgb888.sv",
+    "brief": "Kombinačný modul, ktorý konvertuje 16-bitovú farbu vo formáte RGB565 na 24-bitovú farbu vo formáte RGB888.",
+    "doc": "vga/rgb565_to_rgb888.md"
+  },
+  {
+    "module": "vga_timing",
+    "source": "vga/vga_timing.sv",
+    "brief": "VGA generátor časovania",
+    "doc": "vga/vga_timing.md"
+  },
+  {
+    "module": "vga_ctrl",
+    "source": "vga/vga_ctrl.sv",
+    "brief": "",
+    "doc": "vga/vga_ctrl.md"
+  },
+  {
+    "module": "vga_line",
+    "source": "vga/vga_line.sv",
+    "brief": "",
+    "doc": "vga/vga_line.md"
+  },
+  {
+    "module": "vga_pixel_xy",
+    "source": "vga/vga_pixel_xy.sv",
+    "brief": "Generátor VGA súradníc pixelov (X, Y)",
+    "doc": "vga/vga_pixel_xy.md"
+  },
+  {
+    "module": "GradientPattern",
+    "source": "axis/axis_gradient_generator.sv",
+    "brief": "Generuje AXI4-Stream výstup s farebným gradientom.",
+    "doc": "axis/GradientPattern.md"
+  },
+  {
+    "module": "axis_gradient_generator",
+    "source": "axis/axis_gradient_generator.sv",
+    "brief": "",
+    "doc": "axis/axis_gradient_generator.md"
+  },
+  {
+    "module": "axis_frame_streamer",
+    "source": "axis/axis_frame_streamer.sv",
+    "brief": "AXI4-Stream Frame Streamer generujúci súradnice pixelov.",
+    "doc": "axis/axis_frame_streamer.md"
+  },
+  {
+    "module": "CheckerPattern",
+    "source": "axis/axis_checker_generator.sv",
+    "brief": "AXI4-Stream generátor šachovnicového vzoru (checkerboard pattern)",
+    "doc": "axis/CheckerPattern.md"
+  },
+  {
+    "module": "axis_checker_generator",
+    "source": "axis/axis_checker_generator.sv",
+    "brief": "",
+    "doc": "axis/axis_checker_generator.md"
+  },
+  {
+    "module": "axis_to_vga",
+    "source": "axis/axis_to_vga.sv",
+    "brief": "Premosťuje AXI4-Stream dáta na paralelný VGA výstup.",
+    "doc": "axis/axis_to_vga.md"
+  }
+]

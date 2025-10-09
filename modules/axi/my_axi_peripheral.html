@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>my_axi_peripheral</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-my_axi_peripheral">Modul <code>my_axi_peripheral</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Definície AXI rozhraní (AXI4, AXI4-Lite, AXI4-Stream) pre použitie v SoC dizajne.</p>
+<p>Tento súbor obsahuje deklarácie troch rozhraní AXI štandardu:
+- <code>axi4lite_if</code>: jednoduché register-based rozhranie bez burst prenosov
+- <code>axi4_if</code>: plné AXI rozhranie s podporou burst prenosov, ID a out-of-order komunikácie
+- <code>axi4s_if</code>: prúdové rozhranie bez adresácie, vhodné na vysokorýchlostný prenos dát</p>
+<p>Každé rozhranie obsahuje <code>modport</code> definície pre <code>master</code> a <code>slave</code>, ktoré
+uľahčujú správne použitie a smerovanie signálov v dizajne.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: ADDR_WIDTH    Šírka adresy (v bitoch)</li>
+<li><code>[in]</code>: DATA_WIDTH    Šírka dátovej zbernice (v bitoch)</li>
+<li><code>[in]</code>: ID_WIDTH      Šírka identifikátora transakcie (len AXI4/AXI4-Stream)</li>
+<li><code>[in]</code>: LEN_WIDTH     Šírka poľa dĺžky burst prenosu (AXI4)</li>
+<li><code>[in]</code>: STRB_WIDTH    Šírka byte-masky (WSTRB, TKEEP)</li>
+<li><code>[in]</code>: USER_WIDTH    Šírka TUSER signálu (AXI4-Stream)</li>
+<li><code>[in]</code>: DEST_WIDTH    Šírka TDEST signálu (AXI4-Stream)</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ACLK</code></td>
+<td>Hodinový signál (všetky rozhrania)</td>
+</tr>
+<tr>
+<td><code>ARESETn</code></td>
+<td>Asynchrónny reset, aktívny v nule</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">// Použitie v module:
+module my_axi_peripheral (
+input  logic clk,
+input  logic rstn,
+...
+);
+import axi_pkg::*;
+axi4lite_if #(.ADDR_WIDTH(16), .DATA_WIDTH(32)) axi_if (
+.ACLK(clk),
+.ARESETn(rstn)
+);
+
+// Prístup k modportom:
+assign axi_if.AWADDR = ...;
+...
+endmodule
+</code></pre>
+</body>
+</html>

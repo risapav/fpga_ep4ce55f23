@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>vga_timing</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-vga_timing">Modul <code>vga_timing</code></h1>
+<h2 id="popis">Popis</h2>
+<p>VGA generátor časovania</p>
+<p>Tento modul zabezpečuje generovanie horizontálneho a vertikálneho časovania pre VGA výstup.
+Pracuje s dvoma nezávislými inštanciami <code>vga_line</code> – pre horizontálne a vertikálne časovanie.
+Každý generátor prijíma štruktúru <code>line_t</code> s parametrami časovania (sync, back porch, active, front porch).
+Modul vypočítava signály ako hsync, vsync, hde, vde, koniec riadku (eol) a koniec snímky (eof).</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: MAX_COUNTER_H   Najvyššia hodnota, ktorú dosiahne čítač počítajúci pozíciu v H smere</li>
+<li><code>[in]</code>: MAX_COUNTER_V   Najvyššia hodnota, ktorú dosiahne čítač počítajúci pozíciu v V smere</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Systémové hodiny (pixel clock)</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Asynchrónny reset, aktívny v L</td>
+</tr>
+<tr>
+<td><code>enable_i</code></td>
+<td>Povolenie činnosti (napr. z časovača pre refresh)</td>
+</tr>
+<tr>
+<td><code>h_line_i</code></td>
+<td>Horizontálna štruktúra <code>line_t</code> so všetkými parametrami VGA riadku</td>
+</tr>
+<tr>
+<td><code>v_line_i</code></td>
+<td>Vertikálna štruktúra <code>line_t</code> pre riadky a snímky</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hde_o</code></td>
+<td>Príznak, že sa nachádzame v aktívnej časti riadku (data enable pre pixely)</td>
+</tr>
+<tr>
+<td><code>vde_o</code></td>
+<td>Príznak, že sa nachádzame v aktívnej oblasti obrázka (riadky)</td>
+</tr>
+<tr>
+<td><code>hsyn_o</code></td>
+<td>Horizontálny synchronizačný impulz, upravený podľa polarity</td>
+</tr>
+<tr>
+<td><code>vsyn_o</code></td>
+<td>Vertikálny synchronizačný impulz, upravený podľa polarity</td>
+</tr>
+<tr>
+<td><code>eol_o</code></td>
+<td>Jeden pulz na konci každého riadku</td>
+</tr>
+<tr>
+<td><code>eof_o</code></td>
+<td>Jeden pulz na konci celej snímky (kombinácia eol a koniec vertikálneho počítadla)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">Názorný príklad použitia:
+
+import vga_pkg::*;
+
+localparam VgaMode = VGA_640x480_60;
+
+// --- Signály pre prepojenie modulov ---
+wire       hde, vde;       // Data Enable signály
+wire       eol, eof;       // Pulzy konca riadku/snímky
+wire       vsync, hsync;   // Synchro pulzy pre grafiku VGA
+
+line_t      h_line;
+line_t      v_line;
+
+`ifdef __ICARUS__
+// Pre simuláciu (Icarus) zadáme parametre manuálne
+h_line = '{640, 16, 96, 48, PulseActiveLow};
+v_line = '{480, 10, 2, 33, PulseActiveLow};
+`else
+// Pre syntézu (Quartus) použijeme funkciu z balíčka vga_pkg
+vga_params_t vga_params = get_vga_params(VgaMode);
+assign h_line = vga_params.h_line;
+assign v_line = vga_params.v_line;
+`endif
+
+vga_timing #(
+.MAX_COUNTER_H(MaxPosCounterX),
+.MAX_COUNTER_V(MaxPosCounterY)
+) u_vga_timing (
+.clk_i(clk),
+.rst_ni(rst_n),
+.enable_i(1'b1),
+.h_line_i(h_line),
+.v_line_i(v_line),
+.hde_o(hde),
+.vde_o(vde),
+.hsyn_o(hsync),
+.vsyn_o(vsync),
+.eol_o(eol),
+.eof_o(eof)
+);
+</code></pre>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>axis_frame_streamer</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-axis_frame_streamer">Modul <code>axis_frame_streamer</code></h1>
+<h2 id="popis">Popis</h2>
+<p>AXI4-Stream Frame Streamer generujúci súradnice pixelov.</p>
+<p>Modul generuje sekvenčný tok pixelových súradníc (x, y) pre dané
+rozlíšenie (H_RES × V_RES) a vystavuje ich ako AXI4-Stream master rozhranie.
+Signály TVALID, TLAST a TUSER sú riadené podľa štandardu AXI4-Stream:
+- TLAST označuje posledný pixel rámca (pravý spodný roh).
+- TUSER je aktívny na prvom pixeli rámca (ľavý horný roh).
+Modul je vhodný na testovanie a generovanie riadiacich signálov pre
+spracovanie videa alebo grafiky.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: H_RES               Horizontálne rozlíšenie rámca (pixely).</li>
+<li><code>[in]</code>: V_RES               Vertikálne rozlíšenie rámca (pixely).</li>
+<li><code>[in]</code>: DATA_WIDTH          Šírka dátového slova (bity).</li>
+<li><code>[in]</code>: USER_WIDTH          Šírka TUSER signálu.</li>
+<li><code>[in]</code>: KEEP_WIDTH          Šírka TKEEP signálu (DATA_WIDTH/8).</li>
+<li><code>[in]</code>: ID_WIDTH            Šírka TID signálu (ak sa používa).</li>
+<li><code>[in]</code>: DEST_WIDTH          Šírka TDEST signálu (ak sa používa).</li>
+<li><code>[in]</code>: COUNTER_WIDTH       Šírka čítačov pre x a y (vypočítaná z H_RES).</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Hodinový signál modulu.</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Aktívny nízky reset modulu.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x_o</code></td>
+<td>Aktuálna horizontálna súradnica pixelu.</td>
+</tr>
+<tr>
+<td><code>y_o</code></td>
+<td>Aktuálna vertikálna súradnica pixelu.</td>
+</tr>
+<tr>
+<td><code>m_axis</code></td>
+<td>AXI4-Stream master rozhranie so signálmi TVALID, TREADY, TDATA, TUSER, TLAST atď.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">axis_frame_streamer #(
+.H_RES(1280),
+.V_RES(720),
+.DATA_WIDTH(24),
+.USER_WIDTH(1)
+) u_frame_streamer (
+.clk_i(clk),
+.rst_ni(rstn),
+.x_o(x),
+.y_o(y),
+.m_axis(m_axis_if)
+);
+</code></pre>
+</body>
+</html>
