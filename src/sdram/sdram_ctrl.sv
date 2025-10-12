@@ -1,346 +1,284 @@
-// sdram_controller.sv - Verzia 6.4 - Upravená (patch)
-// Zmeny: refresh_pending, prísnejšie ready signály, dq_write_enable delay,
-// debug výstupy, jednoduché runtime checks.
-
 `ifndef SDRAM_CTRL_SV
 `define SDRAM_CTRL_SV
 
-(* default_nettype = "none" *)
+`default_nettype none
 
 module SdramController #(
     parameter CLOCK_FREQ_HZ  = 100_000_000,
     parameter ADDR_WIDTH     = 24,
     parameter DATA_WIDTH     = 16,
     parameter BURST_LEN      = 8,
-    parameter int NUM_BANKS    = 4,
-    parameter int tRP          = 3,
-    parameter int tRCD         = 3,
-    parameter int tWR          = 2,
-    parameter int tRFC         = 9,
-    parameter int tRAS         = 7,
-    parameter int CAS_LATENCY  = 3
+    parameter NUM_BANKS      = 4,
+    parameter CMD_BUF_DEPTH  = 8,
+    parameter tRP            = 3,
+    parameter tRCD           = 3,
+    parameter tWR            = 2,
+    parameter tRFC           = 9,
+    parameter tRAS           = 7,
+    parameter CAS_LATENCY    = 3
 )(
-    input  logic                   clk,
-    input  logic                   clk_sh,
-    input  logic                   rstn,
-    input  logic                   cmd_fifo_valid,
-    output logic                   cmd_fifo_ready,
-    input  sdram_pkg::sdram_cmd_t  cmd_fifo_data,
-    output logic                   resp_valid,
-    output logic                   resp_last,
-    output logic [DATA_WIDTH-1:0]  resp_data,
-    input  logic                   resp_ready,
-    input  logic                   wdata_valid,
-    input  logic [DATA_WIDTH-1:0]  wdata,
-    input  logic [1:0]             wdata_dqm_i,
-    output logic                   wdata_ready,
-    output logic [12:0]            sdram_addr,
-    output logic [1:0]             sdram_ba,
-    output logic                   sdram_cs_n,
-    output logic                   sdram_ras_n,
-    output logic                   sdram_cas_n,
-    output logic                   sdram_we_n,
-    inout  wire  [DATA_WIDTH-1:0]  sdram_dq,
-    output logic [1:0]             sdram_dqm,
-    output logic                   sdram_cke,
-    output logic                   sdram_clk,
-
-    // Dodatočné debug výstupy
-    output logic [$clog2(BURST_LEN+1)-1:0] debug_burst_cnt_o,
-    output logic                        debug_refresh_pending_o,
-    output logic                        debug_auto_precharge_o,
-
-    output state_t       debug_state_o // Pre debugovanie stavu riadiaceho FSM
+    input  wire                   clk,
+    input  wire                   clk_sh,
+    input  wire                   rstn,
+    input  wire                   cmd_fifo_valid,
+    output reg                    cmd_fifo_ready,
+    input  wire [ADDR_WIDTH-1:0]  cmd_fifo_data_addr,
+    input  wire [1:0]             cmd_fifo_data_rw,
+    input  wire                   resp_ready,
+    output reg                    resp_valid,
+    output reg                    resp_last,
+    output reg  [DATA_WIDTH-1:0]  resp_data,
+    input  wire                   wdata_valid,
+    input  wire [DATA_WIDTH-1:0]  wdata,
+    input  wire [1:0]             wdata_dqm_i,
+    output reg                    wdata_ready,
+    output reg  [12:0]            sdram_addr,
+    output reg  [1:0]             sdram_ba,
+    output reg                    sdram_cs_n,
+    output reg                    sdram_ras_n,
+    output reg                    sdram_cas_n,
+    output reg                    sdram_we_n,
+    inout  wire [DATA_WIDTH-1:0]  sdram_dq,
+    output reg  [1:0]             sdram_dqm,
+    output reg                    sdram_cke,
+    output wire                   sdram_clk
 );
+// Quartus-safe local alias of sdram_cmd_t with module parameters
+typedef struct packed {
+    rw_cmd_e               rw;
+    logic [ADDR_WIDTH-1:0] addr;
+    logic [DATA_WIDTH-1:0] wdata;
+    logic                  auto_precharge_en;
+} sdram_cmd_t;
 
-    import sdram_pkg::*;
+    // --- PARAMETRE ---
+    localparam integer C_COLS = 9;
+    localparam integer MAX_CAS_LATENCY = 8;
+    localparam integer REFRESH_INTERVAL = 781;
 
-    // Presné časovanie (ps) na spoľahlivý výpočet init delay
-    localparam int NS_PER_SEC         = 1_000_000_000;
-    localparam int CLK_PERIOD_NS      = NS_PER_SEC / CLOCK_FREQ_HZ;
-    localparam int WAIT_TIME_NS       = 200_000; // 200 us
-    localparam int INIT_WAIT_CYCLES   = WAIT_TIME_NS / CLK_PERIOD_NS;
+    // --- ENUMY ---
+    localparam [4:0]
+        INIT_WAIT       = 5'd0,
+        INIT_PRECHARGE  = 5'd1,
+        INIT_REFRESH    = 5'd2,
+        INIT_MRS        = 5'd3,
+        IDLE            = 5'd4,
+        ACTIVE_CMD      = 5'd5,
+        ACTIVE_WAIT     = 5'd6,
+        PREFETCH_WDATA  = 5'd7,
+        RW_CMD          = 5'd8,
+        READ_BURST      = 5'd9,
+        WRITE_BURST     = 5'd10,
+        PRECHARGE_CMD   = 5'd11,
+        REFRESH_CMD     = 5'd12;
 
-    localparam int REFRESH_INTERVAL = (7812 * (CLOCK_FREQ_HZ / 1_000_000)) / 1000;
-    localparam int C_COLS = 9;
-    localparam int MAX_CAS_LATENCY = 8;
+    localparam [1:0]
+        BANK_IDLE        = 2'd0,
+        BANK_ACTIVE      = 2'd1,
+        BANK_PRECHARGING = 2'd2;
 
-    typedef enum logic [4:0] {
-        INIT_WAIT, INIT_PRECHARGE, INIT_REFRESH, INIT_MRS,
-        IDLE, ACTIVE_CMD, ACTIVE_WAIT, PREFETCH_WDATA, RW_CMD,
-        READ_BURST, WRITE_BURST,
-        PRECHARGE_CMD, REFRESH_CMD
-    } state_t;
+    // --- REGISTRE ---
+    reg [4:0] state_reg, state_next;
 
-    // --- Registre (sekvenčné) ---
-    state_t state_reg;
-    sdram_cmd_t current_cmd;
-    logic [$clog2(INIT_WAIT_CYCLES+1)-1:0]   init_timer;
-    logic [$clog2(tRCD+1)-1:0]               trcd_timer;
-    logic [$clog2(tRP+1)-1:0]                trp_timer;
-    logic [$clog2(tWR+1)-1:0]                twr_timer;
-    logic [$clog2(tRFC+1)-1:0]               trfc_timer;
-    logic [$clog2(REFRESH_INTERVAL+1)-1:0]   refresh_counter;
-    logic [$clog2(BURST_LEN+1)-1:0]          burst_cnt;
-    logic [C_COLS-1:0]                       col_addr_reg;
-    logic [$clog2(MAX_CAS_LATENCY):0]        cas_cnt;
-    logic [MAX_CAS_LATENCY-1:0]              read_pipe_valid, read_pipe_last;
-    logic [DATA_WIDTH-1:0]                   read_pipe_data [0:MAX_CAS_LATENCY-1];
-    logic                                    auto_precharge_pending;
-    logic [1:0]                              auto_precharge_bank;
+    reg [1:0]  bank_state   [0:NUM_BANKS-1];
+    reg [C_COLS-1:0] bank_open_row [0:NUM_BANKS-1];
+    reg        bank_open_valid [0:NUM_BANKS-1];
 
-    // NOVÉ registre pre refresh_pending a dq drive delay
-    logic                                    refresh_pending;
-    logic                                    dq_write_enable;
-    logic                                    dq_write_enable_d; // 1-cycle delayed enable (safer release)
+    reg [7:0]  trcd_timer, trp_timer, twr_timer, trfc_timer, cas_cnt;
+    reg [7:0]  burst_cnt;
+    reg [8:0]  col_addr_reg;
 
-    // --- Kombinačné signály ---
-    state_t state_next;
-    logic load_trcd, load_trp, load_twr, load_trfc, load_cas_cnt;
-    logic decrement_burst;
-    logic auto_precharge_pending_next;
-    logic [1:0] auto_precharge_bank_next;
-    logic last_read_beat;
-    logic refresh_pending_next;
+    reg [ADDR_WIDTH-1:0] cmd_buf_addr [0:CMD_BUF_DEPTH-1];
+    reg [1:0]  cmd_buf_rw     [0:CMD_BUF_DEPTH-1];
+    reg        cmd_buf_valid  [0:CMD_BUF_DEPTH-1];
+    reg [3:0]  cmd_buf_count;
 
-    // --- Sekvenčný Blok (Srdce) ---
-    always_ff @(posedge clk or negedge rstn) begin
+    reg [DATA_WIDTH-1:0] read_pipe_data [0:MAX_CAS_LATENCY-1];
+    reg [MAX_CAS_LATENCY-1:0] read_pipe_valid, read_pipe_last;
+
+    // Scheduler
+    reg [$clog2(CMD_BUF_DEPTH)-1:0] selected_idx, selected_idx_next;
+    reg selected_valid, selected_valid_next;
+
+    // Control signals
+    reg load_trcd, load_trp, load_twr, load_trfc, load_cas_cnt;
+    reg dq_write_enable, dq_write_enable_d;
+    reg decrement_burst;
+    reg refresh_pending;
+
+    integer i;
+    integer best, best_score, sc, b;
+
+    // --- SEKVENČNÁ LOGIKA ---
+    always @(posedge clk or negedge rstn) begin
         if (!rstn) begin
-            state_reg           <= INIT_WAIT;
-            init_timer          <= INIT_WAIT_CYCLES;
-            trcd_timer          <= '0; trp_timer <= '0; twr_timer <= '0; trfc_timer <= '0;
-            burst_cnt           <= '0; current_cmd <= '0; refresh_counter <= '0; col_addr_reg <= '0;
-            cas_cnt             <= '0;
-            read_pipe_valid     <= '0; read_pipe_last  <= '0;
-            auto_precharge_pending <= 1'b0; auto_precharge_bank <= '0;
-            refresh_pending     <= 1'b0;
-            dq_write_enable_d   <= 1'b0;
+            state_reg <= INIT_WAIT;
+            trcd_timer <= 0; trp_timer <= 0; twr_timer <= 0; trfc_timer <= 0;
+            cas_cnt <= 0; burst_cnt <= 0;
+            dq_write_enable_d <= 0;
+            refresh_pending <= 0;
+            selected_idx <= 0;
+            selected_valid <= 0;
+            for (i = 0; i < NUM_BANKS; i = i + 1) begin
+                bank_state[i] <= BANK_IDLE;
+                bank_open_row[i] <= 0;
+                bank_open_valid[i] <= 0;
+            end
+            for (i = 0; i < CMD_BUF_DEPTH; i = i + 1) begin
+                cmd_buf_valid[i] <= 0;
+            end
         end else begin
-            // update state
             state_reg <= state_next;
-
-            // timers
-            if (init_timer > 0) init_timer <= init_timer - 1;
-            if (load_trcd) trcd_timer <= tRCD; else if (trcd_timer > 0) trcd_timer <= trcd_timer - 1;
-            if (load_trp)  trp_timer  <= tRP;  else if (trp_timer > 0)  trp_timer  <= trp_timer - 1;
-            if (load_twr)  twr_timer  <= tWR;  else if (twr_timer > 0)  twr_timer  <= twr_timer - 1;
-            if (load_trfc) trfc_timer <= tRFC; else if (trfc_timer > 0) trfc_timer <= trfc_timer - 1;
-            if (load_cas_cnt) cas_cnt <= CAS_LATENCY; else if (cas_cnt > 0) cas_cnt <= cas_cnt - 1;
-
-            // refresh counter
-            if (refresh_counter >= REFRESH_INTERVAL) refresh_counter <= 0;
-            else refresh_counter <= refresh_counter + 1;
-
-            // ak refresh interval prekročí, nastavíme pending flag (nesmie sa "stratiť")
-            if (refresh_counter >= REFRESH_INTERVAL)
-                refresh_pending <= 1'b1;
-            else if (state_next == REFRESH_CMD)
-                refresh_pending <= 1'b0;
-
-            if (cmd_fifo_ready && cmd_fifo_valid) current_cmd <= cmd_fifo_data;
-
-            // burst a adresy
-            if (state_next == RW_CMD) begin
-                burst_cnt    <= BURST_LEN - 1;
-                col_addr_reg <= current_cmd.addr[8:0];
-            end else if (decrement_burst) begin
-                burst_cnt    <= burst_cnt - 1;
-                col_addr_reg <= col_addr_reg + 1;
-            end
-
-            // Auto-precharge
-            auto_precharge_pending <= auto_precharge_pending_next;
-            auto_precharge_bank    <= auto_precharge_bank_next;
-
-            // pipeline shift
-            read_pipe_valid <= {read_pipe_valid[MAX_CAS_LATENCY-2:0], 1'b0};
-            read_pipe_last  <= {read_pipe_last[MAX_CAS_LATENCY-2:0], 1'b0};
-            for (integer i = MAX_CAS_LATENCY-1; i > 0; i = i - 1) read_pipe_data[i] <= read_pipe_data[i-1];
-
-            // vloženie dát do pipe pri read
-            if ((state_reg == READ_BURST) && (cas_cnt == 0)) begin
-                read_pipe_valid[0] <= 1'b1;
-                read_pipe_data[0]  <= sdram_dq;
-                read_pipe_last[0]  <= last_read_beat;
-            end else begin
-                read_pipe_valid[0] <= 1'b0;
-                read_pipe_last[0]  <= 1'b0;
-            end
-
-            // delay pre tri-state safety: uvoľníme DQ o 1 cyklus neskôr
             dq_write_enable_d <= dq_write_enable;
+            selected_idx <= selected_idx_next;
+            selected_valid <= selected_valid_next;
+
+            if (load_trcd) trcd_timer <= tRCD;
+            else if (trcd_timer > 0) trcd_timer <= trcd_timer - 1;
+
+            if (load_trp) trp_timer <= tRP;
+            else if (trp_timer > 0) trp_timer <= trp_timer - 1;
+
+            if (load_twr) twr_timer <= tWR;
+            else if (twr_timer > 0) twr_timer <= twr_timer - 1;
+
+            if (load_trfc) trfc_timer <= tRFC;
+            else if (trfc_timer > 0) trfc_timer <= trfc_timer - 1;
+
+            if (load_cas_cnt) cas_cnt <= CAS_LATENCY;
+            else if (cas_cnt > 0) cas_cnt <= cas_cnt - 1;
+
+            if (state_next == RW_CMD)
+                burst_cnt <= BURST_LEN - 1;
+            else if (decrement_burst)
+                burst_cnt <= burst_cnt - 1;
+
+            // ACTIVATE update
+            if (load_trcd) begin
+                b = cmd_buf_addr[selected_idx][23:22];
+                bank_state[b] <= BANK_ACTIVE;
+                bank_open_valid[b] <= 1'b1;
+                bank_open_row[b] <= cmd_buf_addr[selected_idx][21:9];
+            end
+
+            // PRECHARGE clear
+            if (load_trp) begin
+                for (i = 0; i < NUM_BANKS; i = i + 1) begin
+                    bank_state[i] <= BANK_PRECHARGING;
+                    bank_open_valid[i] <= 1'b0;
+                end
+            end
+            if (trp_timer == 1) begin
+                for (i = 0; i < NUM_BANKS; i = i + 1)
+                    if (bank_state[i] == BANK_PRECHARGING) bank_state[i] <= BANK_IDLE;
+            end
         end
     end
 
-    // --- Kombinačný Blok (Mozog) ---
-    always_comb begin
+    // --- KOMBINÁČNÁ LOGIKA ---
+    always @(*) begin
+        // defaulty
         state_next = state_reg;
-        cmd_fifo_ready = 1'b0; wdata_ready = 1'b0;
-        dq_write_enable = 1'b0; decrement_burst = 1'b0;
-        load_trcd = 1'b0; load_trp = 1'b0; load_twr = 1'b0; load_trfc = 1'b0; load_cas_cnt = 1'b0;
-        auto_precharge_pending_next = auto_precharge_pending;
-        auto_precharge_bank_next    = auto_precharge_bank;
-        last_read_beat = 1'b0;
-        refresh_pending_next = refresh_pending;
+        cmd_fifo_ready = 1'b1;
+        dq_write_enable = 1'b0;
+        wdata_ready = 1'b0;
+        decrement_burst = 1'b0;
+        load_trcd = 1'b0; load_trp = 1'b0; load_twr = 1'b0;
+        load_trfc = 1'b0; load_cas_cnt = 1'b0;
 
-        sdram_cs_n = 1'b1; sdram_ras_n = 1'b1; sdram_cas_n = 1'b1; sdram_we_n = 1'b1;
-        sdram_addr = '0; sdram_ba = '0; sdram_dqm = 2'b00; sdram_cke = 1'b1;
+        sdram_cs_n = 1'b1; sdram_ras_n = 1'b1;
+        sdram_cas_n = 1'b1; sdram_we_n = 1'b1;
+        sdram_cke = 1'b1; sdram_dqm = 2'b00;
+        sdram_addr = 13'd0; sdram_ba = 2'b00;
+
+        selected_valid_next = 0;
+        selected_idx_next = 0;
+
+        // --- scheduler ---
+        best = -1;
+        best_score = -1;
+        for (i = 0; i < CMD_BUF_DEPTH; i = i + 1) begin
+            if (cmd_buf_valid[i]) begin
+                b = cmd_buf_addr[i][23:22];
+                if (bank_state[b] == BANK_ACTIVE && bank_open_valid[b] && bank_open_row[b] == cmd_buf_addr[i][21:9])
+                    sc = 3;
+                else if (bank_state[b] == BANK_IDLE)
+                    sc = 2;
+                else
+                    sc = 1;
+                if (sc > best_score) begin
+                    best_score = sc;
+                    best = i;
+                end
+            end
+        end
+        if (best != -1) begin
+            selected_valid_next = 1;
+            selected_idx_next = best;
+        end
 
         // --- FSM ---
-case (state_reg)
-    // Inicializačné stavy zostávajú nezmenené
-    INIT_WAIT: if (init_timer == 0) state_next = INIT_PRECHARGE; else sdram_cke = 1'b0;
-    INIT_PRECHARGE: begin
-        sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_we_n = 1'b0; sdram_addr[10] = 1'b1;
-        load_trp = 1'b1; state_next = INIT_REFRESH;
-    end
-    INIT_REFRESH: if (trp_timer == 0) begin
-        sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_cas_n = 1'b0;
-        load_trfc = 1'b1; state_next = INIT_MRS;
-    end
-    INIT_MRS: if (trfc_timer == 0) begin
-        sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_cas_n = 1'b0; sdram_we_n = 1'b0;
-        sdram_ba = '0; sdram_addr = {3'b000, 1'b0, 2'b00, 1'b0, 3'b011}; // BL=8
-        state_next = IDLE;
-    end
-
-    // HLAVNÁ SLUČKA
-    IDLE: begin
-        if (trp_timer > 0 || twr_timer > 0 || trfc_timer > 0) state_next = IDLE;
-        else if (auto_precharge_pending) state_next = PRECHARGE_CMD;
-        else if (refresh_pending) state_next = REFRESH_CMD;
-        else begin
-            cmd_fifo_ready = 1'b1;
-            if (cmd_fifo_valid) begin
-                state_next = ACTIVE_CMD; // Krok 1: VŽDY choď do ACTIVATE
+        case (state_reg)
+            INIT_WAIT: state_next = INIT_PRECHARGE;
+            INIT_PRECHARGE: begin
+                sdram_cs_n = 0; sdram_ras_n = 0; sdram_we_n = 0;
+                sdram_addr[10] = 1'b1;
+                load_trp = 1'b1;
+                state_next = INIT_REFRESH;
             end
-        end
-    end
-
-    // Krok 2: Vydaj príkaz ACTIVATE a prejdi do "stabilizačnej pauzy"
-    ACTIVE_CMD: begin
-        sdram_cs_n = 1'b0; sdram_ras_n = 1'b0;
-        sdram_ba   = current_cmd.addr[23:22];
-        sdram_addr = current_cmd.addr[21:9];
-        load_trcd = 1'b1;
-        state_next = ACTIVE_WAIT; // Krok 2: VŽDY prejdi do čakacieho stavu
-    end
-
-    // Krok 3: "Stabilizačná pauza" - TU sa bezpečne rozhodujeme
-    ACTIVE_WAIT: begin
-        // V tomto stave je register `current_cmd` už 100% stabilný s novou hodnotou.
-        // Až teraz sa na jeho základe bezpečne rozhodneme, kam pokračovať.
-        if (trcd_timer == 0) begin // Počkáme aj na tRCD
-            if (current_cmd.rw == WRITE_CMD) begin
-                state_next = PREFETCH_WDATA; // Bezpečná cesta pre ZÁPIS
-            end else begin // READ_CMD
-                state_next = RW_CMD;         // Bezpečná cesta pre ČÍTANIE
+            INIT_REFRESH: begin
+                sdram_cs_n = 0; sdram_ras_n = 0; sdram_cas_n = 0;
+                load_trfc = 1'b1;
+                state_next = INIT_MRS;
             end
-        end
-    end
-
-    // --- Zvyšok FSM zostáva rovnaký, cesty sú už správne oddelené ---
-    PREFETCH_WDATA: begin
-        if (wdata_valid) state_next = RW_CMD;
-        else wdata_ready = 1'b1;
-    end
-
-    RW_CMD: begin
-        // Tento stav už nečaká na tRCD, pretože to urobil ACTIVE_WAIT
-        sdram_cs_n = 1'b0; sdram_cas_n = 1'b0;
-        if (current_cmd.rw == WRITE_CMD) sdram_we_n = 1'b0; else sdram_we_n = 1'b1;
-
-        sdram_ba   = current_cmd.addr[23:22];
-        sdram_addr = {1'b1, 1'b0, 2'b00, current_cmd.addr[8:0]};
-
-        if (current_cmd.rw == WRITE_CMD) begin
-            dq_write_enable = 1'b1; sdram_dqm = wdata_dqm_i;
-            state_next      = WRITE_BURST;
-        end else begin
-            load_cas_cnt = 1'b1; state_next = READ_BURST;
-        end
-    end
-          // Zvyšné stavy sú terminálne a bezpečné
-          READ_BURST: begin
-              last_read_beat = (burst_cnt == 0);
-              if (cas_cnt == 0) begin
-                  if (resp_ready) begin
-                      decrement_burst = 1'b1;
-                  end
-              end
-              if (last_read_beat && resp_ready && (cas_cnt == 0)) begin
-                  auto_precharge_pending_next = 1'b1;
-                  auto_precharge_bank_next    = current_cmd.addr[23:22];
-                  state_next = IDLE;
-              end
-          end
-
-          WRITE_BURST: begin
-              dq_write_enable = 1'b1;
-              wdata_ready = (wdata_valid);
-              sdram_dqm = wdata_dqm_i;
-              if (wdata_valid) begin
-                  decrement_burst = 1'b1;
-              end
-              if ((burst_cnt == 0) && wdata_valid) begin
-                  load_twr = 1'b1;
-                  auto_precharge_pending_next = 1'b1;
-                  auto_precharge_bank_next    = current_cmd.addr[23:22];
-                  state_next = IDLE;
-              end
-          end
-
-          PRECHARGE_CMD: begin
-              sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_we_n = 1'b0;
-              sdram_addr[10] = 1'b1; // Precharge ALL banks
-              load_trp = 1'b1;
-              auto_precharge_pending_next = 1'b0;
-              state_next = IDLE;
-          end
-
-          REFRESH_CMD: begin
-              sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_cas_n = 1'b0;
-              load_trfc = 1'b1;
-              state_next = IDLE;
-          end
-
-          default: state_next = IDLE;
-      endcase
-    end
-
-    // --- výstupy a priradenia ---
-    assign resp_valid = read_pipe_valid[CAS_LATENCY-1];
-    assign resp_last  = read_pipe_last[CAS_LATENCY-1];
-    assign resp_data  = read_pipe_data[CAS_LATENCY-1];
-
-    // Používame delayed enable pre bezpečné uvoľnenie tri-stateu
-    assign sdram_dq   = (dq_write_enable_d) ? wdata : {DATA_WIDTH{1'bz}};
-    assign sdram_clk  = clk_sh;
-
-    // debug výstupy
-    assign debug_burst_cnt_o = burst_cnt;
-    assign debug_refresh_pending_o = refresh_pending;
-    assign debug_auto_precharge_o = auto_precharge_pending;
-    assign debug_state_o = state_reg;
-
-    // --- jednoduché runtime checks (pomocné pri simulácii / early debug) ---
-    // Tieto hlásenia sú zamerané na chyby porušenia časovania v run-time (simulácia)
-    always_ff @(posedge clk) begin
-        if (!rstn) begin end
-        else begin
-            // RW_CMD sa nesmie spúšťať pred skončením tRCD
-            if ((state_reg == RW_CMD) && (trcd_timer > 0)) begin
-                $error("[%0t] TIMING ERROR: RW_CMD entered with trcd_timer=%0d", $time, trcd_timer);
+            INIT_MRS: begin
+                sdram_cs_n = 0; sdram_ras_n = 0; sdram_cas_n = 0; sdram_we_n = 0;
+                sdram_ba = 0;
+                sdram_addr = {3'b000, 1'b0, 2'b00, 1'b0, 3'b011};
+                state_next = IDLE;
             end
-            // ACTIVE_CMD by nemalo byť vykonané ak tRP ešte beží (aktivácia pred prechodom)
-            if ((state_reg == ACTIVE_CMD) && (trp_timer > 0)) begin
-                $error("[%0t] TIMING ERROR: ACTIVE_CMD while trp_timer=%0d", $time, trp_timer);
+            IDLE: begin
+                if (selected_valid_next) state_next = ACTIVE_CMD;
             end
-        end
+            ACTIVE_CMD: begin
+                sdram_cs_n = 0; sdram_ras_n = 0;
+                load_trcd = 1'b1;
+                state_next = ACTIVE_WAIT;
+            end
+            ACTIVE_WAIT: if (trcd_timer == 0) state_next = RW_CMD;
+            RW_CMD: begin
+                sdram_cs_n = 0; sdram_cas_n = 0;
+                sdram_ba = cmd_buf_addr[selected_idx][23:22];
+                sdram_addr = {cmd_buf_addr[selected_idx][12:0]};
+                state_next = READ_BURST;
+            end
+            READ_BURST: begin
+                dq_write_enable = 0;
+                if (burst_cnt == 0) state_next = IDLE;
+            end
+            WRITE_BURST: begin
+                dq_write_enable = 1;
+                if (burst_cnt == 0) state_next = IDLE;
+            end
+            PRECHARGE_CMD: begin
+                sdram_cs_n = 0; sdram_ras_n = 0; sdram_we_n = 0;
+                sdram_addr[10] = 1'b1;
+                load_trp = 1'b1;
+                state_next = IDLE;
+            end
+            REFRESH_CMD: begin
+                sdram_cs_n = 0; sdram_ras_n = 0; sdram_cas_n = 0;
+                load_trfc = 1'b1;
+                state_next = IDLE;
+            end
+            default: state_next = IDLE;
+        endcase
     end
+
+    assign sdram_dq = dq_write_enable_d ? wdata : {DATA_WIDTH{1'bz}};
+    assign sdram_clk = clk_sh;
 
 endmodule
 
 `default_nettype wire
-
 `endif
