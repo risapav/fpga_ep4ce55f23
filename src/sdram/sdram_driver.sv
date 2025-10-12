@@ -14,9 +14,12 @@
 (* default_nettype = "none" *)
 
 module SdramDriver #(
+    parameter CLOCK_FREQ_HZ = 100_000_000, // 100 MHz
+    // Konfiguračné parametre
     parameter ADDR_WIDTH = 24,
     parameter DATA_WIDTH = 16,
     parameter BURST_LENGTH = 8,
+    parameter PRIORITY_MODE = "FIXED_WRITER", // "FIXED_WRITER" alebo "ALTERNATE"
     // SDRAM timing parameters (passthrough to controller)
     parameter int tRP        = 3,
     parameter int tRCD       = 3,
@@ -32,9 +35,10 @@ module SdramDriver #(
     parameter int READ_DATA_DEPTH = 256
 )(
     input  logic                   clk_axi,
-    input  logic                   clk_sdram,
     input  logic                   rstn_axi,
-    input  logic                   rstn_sdram,
+    input  logic                   clk,
+    input  logic                   clk_sh,
+    input  logic                   rstn,
 
     // -- Reader interface (AXI domain)
     input  logic                   reader_valid,
@@ -69,8 +73,14 @@ module SdramDriver #(
     inout  wire  [DATA_WIDTH-1:0]  sdram_dq,
     output logic [1:0]             sdram_dqm,
     output logic                   sdram_cke,
+    output logic                   sdram_clk,
 
-    output logic [4:0]   controller_state_o
+    output logic [4:0]   controller_state_o,
+
+    output logic         debug_arb_writer_valid_o,
+    output logic         debug_arb_writer_ready_o,
+    output logic         debug_arb_reader_valid_o,
+    output logic         debug_arb_reader_ready_o
 );
 
     import sdram_pkg::*;
@@ -99,7 +109,7 @@ module SdramDriver #(
     // ZMENA: write_data_fifo je teraz širšie o 2 bity pre DQM
     cdc_async_fifo #(.DATA_WIDTH(DATA_WIDTH + 2), .DEPTH(WRITE_DATA_DEPTH)) write_data_fifo_inst (
         .wr_clk_i(clk_axi), .wr_rst_ni(rstn_axi), .wr_en_i(write_data_fifo_wr_en), .wr_data_i({writer_dqm_i, writer_data}), .full_o(write_data_fifo_full), .almost_full_o(write_data_fifo_almost_full), .overflow_o(write_data_fifo_overflow),
-        .rd_clk_i(clk_sdram), .rd_rst_ni(rstn_sdram), .rd_en_i(write_data_fifo_rd_en), .rd_data_o(write_data_fifo_dout_wide), .empty_o(write_data_fifo_empty)
+        .rd_clk_i(clk), .rd_rst_ni(rstn), .rd_en_i(write_data_fifo_rd_en), .rd_data_o(write_data_fifo_dout_wide), .empty_o(write_data_fifo_empty)
     );
 
     // NOVÉ: Rozdelenie širokého výstupu z FIFO na dáta a DQM
@@ -206,28 +216,61 @@ assign controller_state_o = ctrl_state_w;
     sdram_pkg::sdram_cmd_t cmd_fifo_data;
     logic                  ctrl_resp_valid, ctrl_resp_last;
 
-    SdramCmdArbiter arbiter (
-        .clk(clk_sdram), .rstn(rstn_sdram),
-        .reader_valid(!read_cmd_fifo_empty), .reader_addr(read_cmd_fifo_dout),
-        .writer_valid(!write_cmd_fifo_empty), .writer_addr(write_cmd_fifo_dout),
-        .reader_ready(read_cmd_fifo_rd_en), .writer_ready(write_cmd_fifo_rd_en),
-        .cmd_fifo_valid(cmd_fifo_valid), .cmd_fifo_ready(cmd_fifo_ready), .cmd_fifo_data(cmd_fifo_data)
+    SdramCmdArbiter #(
+        .PRIORITY_MODE(PRIORITY_MODE)
+    ) arbiter (
+        .clk(clk),
+        .rstn(rstn),
+        .reader_valid(!read_cmd_fifo_empty),
+        .reader_addr(read_cmd_fifo_dout),
+        .writer_valid(!write_cmd_fifo_empty),
+        .writer_addr(write_cmd_fifo_dout),
+        .reader_ready(read_cmd_fifo_rd_en),
+        .writer_ready(write_cmd_fifo_rd_en),
+        .cmd_fifo_valid(cmd_fifo_valid),
+        .cmd_fifo_ready(cmd_fifo_ready),
+        .cmd_fifo_data(cmd_fifo_data)
     );
 
+    // Diagnostika arbiteru
+    assign debug_arb_writer_valid_o = !write_cmd_fifo_empty;
+    assign debug_arb_writer_ready_o = write_cmd_fifo_rd_en;
+    assign debug_arb_reader_valid_o = !read_cmd_fifo_empty;
+    assign debug_arb_reader_ready_o = read_cmd_fifo_rd_en;
+
     SdramController #(
-        .ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(DATA_WIDTH), .BURST_LEN(BURST_LENGTH), .NUM_BANKS(NUM_BANKS),
-        .tRP(tRP), .tRCD(tRCD), .tWR(tWR), .tRFC(tRFC), .tRAS(tRAS), .CAS_LATENCY(CAS_LATENCY)
+        .CLOCK_FREQ_HZ(CLOCK_FREQ_HZ),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH),
+        .BURST_LEN(BURST_LENGTH),
+        .NUM_BANKS(NUM_BANKS),
+        .tRP(tRP), .tRCD(tRCD), .tWR(tWR), .tRFC(tRFC), .tRAS(tRAS),
+        .CAS_LATENCY(CAS_LATENCY)
     ) controller (
-        .clk(clk_sdram), .rstn(rstn_sdram),
-        .cmd_fifo_valid(cmd_fifo_valid), .cmd_fifo_ready(cmd_fifo_ready), .cmd_fifo_data(cmd_fifo_data),
-        .resp_valid(ctrl_resp_valid), .resp_last(ctrl_resp_last), .resp_data(read_data_fifo_din),
+        .clk(clk),
+        .clk_sh (clk_sh),
+        .rstn(rstn),
+        .cmd_fifo_valid(cmd_fifo_valid),
+        .cmd_fifo_ready(cmd_fifo_ready),
+        .cmd_fifo_data(cmd_fifo_data),
+        .resp_valid(ctrl_resp_valid),
+        .resp_last(ctrl_resp_last),
+        .resp_data(read_data_fifo_din),
         .resp_ready(!read_data_fifo_full),
-        .wdata_valid(!write_data_fifo_empty), .wdata(write_data_fifo_dout),
+        .wdata_valid(!write_data_fifo_empty),
+        .wdata(write_data_fifo_dout),
         .wdata_dqm_i(write_data_fifo_dqm_out), // NOVÉ prepojenie DQM z FIFO
         .wdata_ready(write_data_fifo_rd_en),
-        .sdram_addr(sdram_addr), .sdram_ba(sdram_ba), .sdram_cs_n(sdram_cs_n),
-        .sdram_ras_n(sdram_ras_n), .sdram_cas_n(sdram_cas_n), .sdram_we_n(sdram_we_n),
-        .sdram_dq(sdram_dq), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke),
+        .sdram_addr(sdram_addr),
+        .sdram_ba(sdram_ba),
+        .sdram_cs_n(sdram_cs_n),
+        .sdram_ras_n(sdram_ras_n),
+        .sdram_cas_n(sdram_cas_n),
+        .sdram_we_n(sdram_we_n),
+        .sdram_dq(sdram_dq),
+        .sdram_dqm(sdram_dqm),
+        .sdram_cke(sdram_cke),
+        .sdram_clk(sdram_clk),
 
         .debug_state_o(ctrl_state_w)
     );

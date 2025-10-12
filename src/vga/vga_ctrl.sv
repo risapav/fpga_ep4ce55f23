@@ -58,7 +58,8 @@ module vga_ctrl #(
 
     // ZMENA: Logika pre `rd_en` je teraz bezpečne tu.
     // Používame `_d` (neregistrované) signály na vyžiadanie dát o 1 takt skôr (prefetch).
-    assign fifo_rd_en_o = hde_d & vde_d;
+//    assign fifo_rd_en_o = hde_d & vde_d;
+    assign fifo_rd_en_o = hde_o && vde_o;
 
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin

@@ -72,12 +72,12 @@ proc assign_module { port_name module_type } {
             set signal_name "LED_${port_name}"
             set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to "${signal_name}[7..0]"
             set_location_assignment $PINS(1) -to "${signal_name}[0]"
-            set_location_assignment $PINS(2) -to "${signal_name}[1]"
-            set_location_assignment $PINS(3) -to "${signal_name}[2]"
-            set_location_assignment $PINS(4) -to "${signal_name}[3]"
-            set_location_assignment $PINS(7) -to "${signal_name}[4]"
-            set_location_assignment $PINS(8) -to "${signal_name}[5]"
-            set_location_assignment $PINS(9) -to "${signal_name}[6]"
+            set_location_assignment $PINS(2) -to "${signal_name}[2]"
+            set_location_assignment $PINS(3) -to "${signal_name}[4]"
+            set_location_assignment $PINS(4) -to "${signal_name}[6]"
+            set_location_assignment $PINS(7) -to "${signal_name}[1]"
+            set_location_assignment $PINS(8) -to "${signal_name}[3]"
+            set_location_assignment $PINS(9) -to "${signal_name}[5]"
             set_location_assignment $PINS(10) -to "${signal_name}[7]"
         }
 

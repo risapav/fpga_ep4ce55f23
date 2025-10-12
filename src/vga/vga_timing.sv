@@ -25,17 +25,17 @@
  * Názorný príklad použitia:
  *
  *   import vga_pkg::*;
- *   
+ *
  *   localparam VgaMode = VGA_640x480_60;
- *   
+ *
  *   // --- Signály pre prepojenie modulov ---
  *   wire       hde, vde;       // Data Enable signály
  *   wire       eol, eof;       // Pulzy konca riadku/snímky
  *   wire       vsync, hsync;   // Synchro pulzy pre grafiku VGA
- *   
+ *
  *   line_t      h_line;
  *   line_t      v_line;
- *   
+ *
  *   `ifdef __ICARUS__
  *   // Pre simuláciu (Icarus) zadáme parametre manuálne
  *   h_line = '{640, 16, 96, 48, PulseActiveLow};
@@ -76,7 +76,7 @@ import vga_pkg::*;
 
 module vga_timing #(
     /** @brief Najvyššia hodnota, ktorú dosiahne čítač počítajúci pozíciu v H smere */
-    parameter int MAX_COUNTER_H = MaxPosCounterX,    
+    parameter int MAX_COUNTER_H = MaxPosCounterX,
     /** @brief Najvyššia hodnota, ktorú dosiahne čítač počítajúci pozíciu v V smere. */
     parameter int MAX_COUNTER_V = MaxPosCounterY
 )(
@@ -131,6 +131,7 @@ module vga_timing #(
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .inc_i(h_line_nol_d), // Vertikálny generátor je inkrementovaný na konci každého riadku
+//        .inc_i(h_line_end_d),
         .line_i(v_line_i),
         .de_o(vde_o),
         .syn_o(v_sync_event),

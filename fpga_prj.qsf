@@ -56,11 +56,13 @@ set_global_assignment -name EDA_USER_COMPILED_SIMULATION_LIBRARY_DIRECTORY /home
 set_global_assignment -name TOP_LEVEL_ENTITY top
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
+set_global_assignment -name SYSTEMVERILOG_FILE src/framebuffer/framebuffer_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_physical_tester.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_ctrl_tester.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/sdram/sdram_stub.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/vga/vga_ctrl_2.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/src/cdc/cdc_pulse_synchronizer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/src/axis/axis_to_vga.sv
-set_global_assignment -name SYSTEMVERILOG_FILE src/vga/vga_timing.sv
-set_global_assignment -name SYSTEMVERILOG_FILE src/vga/vga_ctrl.sv
-set_global_assignment -name SYSTEMVERILOG_FILE src/vga/vga_line.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/vga/vga_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/src/axis/axis_streamer_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE common/src/axis/axis_picture_generator.sv
