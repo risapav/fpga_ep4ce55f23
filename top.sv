@@ -107,7 +107,7 @@ module top (
                 );
 
             framebuffer_ctrl #(
-              .C_OP_MODE(DIAG_WRITE_READ_TEST),
+              .C_OP_MODE(NORMAL),
               .CLOCK_FREQ_HZ(AxiClockHz),
               .H_RES(H_RES),
               .V_RES(V_RES)
