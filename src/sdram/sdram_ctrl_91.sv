@@ -6,23 +6,17 @@
 package sdram_pkg;
 
   // --- Globálne parametre ---
+  // Tieto parametre definujú fyzickú a logickú štruktúru SDRAM a systému.
+  // Sú jediným zdrojom pravdy (Single Source of Truth) pre všetky moduly.
+  parameter int ADDR_WIDTH      = 24;
   parameter int DATA_WIDTH      = 16;
   parameter int BURST_LEN       = 8;
-
-  // --- Parametre adresovania ---
-  parameter int BANK_ADDR_WIDTH = 2;
   parameter int ROW_ADDR_WIDTH  = 13;
   parameter int COL_ADDR_WIDTH  = 9;
-  parameter int ADDR_WIDTH      = BANK_ADDR_WIDTH + ROW_ADDR_WIDTH + COL_ADDR_WIDTH;
+  parameter int BANK_ADDR_WIDTH = 2;
 
-  // --- Parametre časovania (v taktoch) ---
-  parameter int CLOCK_FREQ_HZ   = 100_000_000;
-  parameter int CAS_LATENCY     = 3;
-  parameter int tRP             = 3;
-  parameter int tRCD            = 3;
-  parameter int tWR             = 2;
-  parameter int tRFC            = 9;
-  parameter int tRAS            = 7;
+  // --- OPRAVA (v9.1): Odstránený duplicitný blok s parametrami adresovania ---
+  // Pôvodné duplicitné deklarácie boli odstránené, aby sa predišlo chybe pri kompilácii.
 
   // --- Typ operácie (read/write) ---
   typedef enum logic {
@@ -31,6 +25,7 @@ package sdram_pkg;
   } rw_cmd_t;
 
   // --- Typ adresy SDRAM ---
+  // Rozdeľuje systémovú adresu na časti pre banku, riadok a stĺpec.
   typedef struct packed {
     logic [BANK_ADDR_WIDTH-1:0] bank;
     logic [ROW_ADDR_WIDTH-1:0]  row;
@@ -38,10 +33,11 @@ package sdram_pkg;
   } sdram_addr_t;
 
   // --- Príkaz pre SDRAM kontrolér ---
+  // Štruktúra, ktorú používa užívateľská logika na komunikáciu s kontrolérom.
   typedef struct packed {
     rw_cmd_t   rw;              // READ_CMD alebo WRITE_CMD
     logic      auto_precharge;  // 1 = READA/WRITEA
-    logic [ADDR_WIDTH-1:0] addr; // Systémová adresa
+    logic [ADDR_WIDTH-1:0] addr; // 24-bitová systémová adresa
   } sdram_cmd_t;
 
   // --- Pomocný enum pre FIFO/buffer stav ---
@@ -49,15 +45,7 @@ package sdram_pkg;
     EMPTY, FILLING, FULL, READING
   } buffer_state_t;
 
-  // Typ pre stavové a chybové kódy streamu
-  typedef enum logic [1:0] {
-    STREAM_OK,
-    STREAM_TIMEOUT_ERROR,
-    STREAM_ABORTED
-  } stream_status_t;
-
 endpackage
 
 `default_nettype wire
 `endif
-

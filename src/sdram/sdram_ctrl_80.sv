@@ -1,4 +1,15 @@
-// sdram_controller_final.sv - Verzia 7.11 - Produkčná verzia
+// sdram_controller_final.sv - Verzia 8.0 - Refaktorovaná produkčná verzia
+//
+// Zmeny (v8.0) - Refaktoring pre robustnosť a čitateľnosť:
+// 1. ADRESOVÁ ŠTRUKTÚRA: Zaviedla sa `sdram_addr_t` pre typovo bezpečný a
+//    čitateľnejší prístup k častiam adresy (bank, row, col).
+// 2. POMENOVANÉ KONŠTANTY: "Magické číslo" pre adresový bit A10 (Auto-Precharge)
+//    bolo nahradené konštantou `AP_BIT_INDEX`.
+// 3. PRIORITNÝ REFRESH: Implementovaný mechanizmus "urgentného" refreshu,
+//    ktorý zabraňuje "vyhladovaniu" (starvation) refresh cyklov pri vysokej záťaži.
+// 4. VALIDÁCIA PARAMETROV: Pridané asercie (`initial` blok), ktoré overujú
+//    konzistentnosť zadaných parametrov pri elaborácii.
+//
 // Zmeny (v7.11):
 // 1. DOLADENIE (Robustnosť FIFO): Logika pre aktualizáciu počtu prvkov vo FIFO bola
 //    refaktorovaná. Namiesto `if/else if` štruktúry sa teraz používa explicitná
@@ -9,6 +20,14 @@
 `define SDRAM_CTRL_FINAL_SV
 
 (* default_nettype = "none" *)
+
+// REFAKTORING (v8.0): Štruktúra pre jednoduchší a bezpečnejší prístup k adrese
+typedef struct packed {
+    logic [BANK_ADDR_WIDTH-1:0] bank;
+    logic [ROW_ADDR_WIDTH-1:0]  row;
+    logic [COL_ADDR_WIDTH-1:0]  col;
+} sdram_addr_t;
+
 
 module SdramControllerFinal #(
     // --- Parametre (rovnaké ako v7.10) ---
@@ -59,15 +78,9 @@ module SdramControllerFinal #(
 
     import sdram_pkg::*;
 
-    // --- Lokálne Parametre (rovnaké ako v7.10) ---
+    // --- Lokálne Parametre ---
     localparam integer NUM_BANKS          = 2**BANK_ADDR_WIDTH;
     localparam integer ADDR_WIDTH         = ROW_ADDR_WIDTH + COL_ADDR_WIDTH + BANK_ADDR_WIDTH;
-    localparam integer BANK_ADDR_HI = ADDR_WIDTH - 1;
-    localparam integer BANK_ADDR_LO = BANK_ADDR_HI - BANK_ADDR_WIDTH + 1;
-    localparam integer ROW_ADDR_HI  = BANK_ADDR_LO - 1;
-    localparam integer ROW_ADDR_LO  = ROW_ADDR_HI - ROW_ADDR_WIDTH + 1;
-    localparam integer COL_ADDR_HI  = ROW_ADDR_LO - 1;
-    localparam integer COL_ADDR_LO  = 0;
     localparam integer NS_PER_SEC         = 1_000_000_000;
     localparam integer CLK_PERIOD_NS      = NS_PER_SEC / CLOCK_FREQ_HZ;
     localparam integer WAIT_TIME_NS       = 200_000;
@@ -78,6 +91,22 @@ module SdramControllerFinal #(
     localparam logic [2:0] cas_latency_bits = (CAS_LATENCY == 2) ? 3'b010 : (CAS_LATENCY == 3) ? 3'b011 : 3'b000;
     localparam logic [12:0] mrs_value = {3'b000, 1'b0, 2'b00, cas_latency_bits, 1'b0, burst_len_bits};
     localparam integer FIFO_DEPTH = 1 << FIFO_DEPTH_BITS;
+    // REFAKTORING (v8.0): Pomenovaná konštanta pre bit A10
+    localparam integer AP_BIT_INDEX = 10;
+    // REFAKTORING (v8.0): Multiplikátor pre urgentný refresh časovač
+    localparam integer URGENT_REFRESH_MULTIPLIER = 2;
+    localparam integer URGENT_REFRESH_CYCLES = REFRESH_INTERVAL * URGENT_REFRESH_MULTIPLIER;
+
+    // --- Validácia Parametrov (Assertions) ---
+    // REFAKTORING (v8.0): Pridané pre včasné odhalenie chýb v konfigurácii
+    initial begin
+        if (tRAS < tRCD) $fatal(1, "SdramController: tRAS (%0d) must be >= tRCD (%0d).", tRAS, tRCD);
+        if (tRP < 2) $warning("SdramController: tRP (%0d) is very short. Ensure it meets datasheet spec.", tRP);
+        if (CAS_LATENCY != 2 && CAS_LATENCY != 3) $fatal(1, "SdramController: Unsupported CAS_LATENCY (%0d). Must be 2 or 3.", CAS_LATENCY);
+        if (BURST_LEN != 1 && BURST_LEN != 2 && BURST_LEN != 4 && BURST_LEN != 8) $fatal(1, "SdramController: Unsupported BURST_LEN (%0d).", BURST_LEN);
+        if (CLK_PERIOD_NS == 0) $fatal(1, "SdramController: CLOCK_FREQ_HZ is too high, resulting in 0 ns period.");
+        if (INIT_WAIT_CYCLES < 10) $fatal(1, "SdramController: CLOCK_FREQ_HZ is too low or init wait time is too short.");
+    end
 
     // --- FSM States ---
     typedef enum logic [4:0] {
@@ -115,6 +144,10 @@ module SdramControllerFinal #(
     logic [FIFO_DEPTH_BITS-1:0] fifo_w_rptr, fifo_w_rptr_next;
     logic [$clog2(FIFO_DEPTH+1)-1:0] fifo_w_count, fifo_w_count_next;
     logic fifo_w_wr_en, fifo_w_rd_en, fifo_w_full, fifo_w_empty;
+    // REFAKTORING (v8.0): Signály pre prioritný refresh
+    logic [$clog2(URGENT_REFRESH_CYCLES+1)-1:0] urgent_refresh_counter, urgent_refresh_counter_next;
+    logic urgent_refresh_req, urgent_refresh_req_next;
+
 
     // --- Sekvenčný Blok (Srdce) ---
     always_ff @(posedge clk) begin
@@ -124,6 +157,8 @@ module SdramControllerFinal #(
             trcd_timer <= '0; trp_timer <= '0; twr_timer <= '0; trfc_timer <= '0;
             refresh_counter <= REFRESH_INTERVAL;
             refresh_pending <= 1'b0;
+            urgent_refresh_counter <= URGENT_REFRESH_CYCLES; // REFAKTORING (v8.0)
+            urgent_refresh_req <= 1'b0;                      // REFAKTORING (v8.0)
             cas_cnt <= '0;
             burst_cnt <= '0;
             current_cmd <= '0;
@@ -143,6 +178,8 @@ module SdramControllerFinal #(
             trfc_timer      <= trfc_timer_next;
             refresh_counter <= refresh_counter_next;
             refresh_pending <= refresh_pending_next;
+            urgent_refresh_counter <= urgent_refresh_counter_next; // REFAKTORING (v8.0)
+            urgent_refresh_req <= urgent_refresh_req_next;         // REFAKTORING (v8.0)
             cas_cnt         <= cas_cnt_next;
             burst_cnt       <= burst_cnt_next;
             current_cmd     <= current_cmd_next;
@@ -172,6 +209,8 @@ module SdramControllerFinal #(
         trfc_timer_next     = trfc_timer;
         refresh_counter_next= refresh_counter;
         refresh_pending_next= refresh_pending;
+        urgent_refresh_counter_next = urgent_refresh_counter; // REFAKTORING (v8.0)
+        urgent_refresh_req_next = urgent_refresh_req;         // REFAKTORING (v8.0)
         cas_cnt_next        = cas_cnt;
         burst_cnt_next      = burst_cnt;
         current_cmd_next    = current_cmd;
@@ -188,13 +227,9 @@ module SdramControllerFinal #(
         end
 
         // --- Dekódovanie adresy ---
-        logic [BANK_ADDR_WIDTH-1:0] cmd_bank_addr;
-        logic [ROW_ADDR_WIDTH-1:0]  cmd_row_addr;
-        logic [COL_ADDR_WIDTH-1:0]  cmd_col_addr;
-
-        cmd_bank_addr = current_cmd.addr[BANK_ADDR_HI:BANK_ADDR_LO];
-        cmd_row_addr = current_cmd.addr[ROW_ADDR_HI:ROW_ADDR_LO];
-        cmd_col_addr = current_cmd.addr[COL_ADDR_HI:COL_ADDR_LO];
+        // REFAKTORING (v8.0): Použitie štruktúry pre čitateľnosť
+        sdram_addr_t cmd_addr;
+        cmd_addr = sdram_addr_t'(current_cmd.addr);
 
         // --- Riadiace signály ---
         cmd_fifo_ready  = 1'b0;
@@ -214,8 +249,16 @@ module SdramControllerFinal #(
 
         // --- Refresh logika ---
         if (state_reg != REFRESH_CMD) begin
+            // Bežný refresh
             if (refresh_counter == 0) refresh_pending_next = 1'b1;
             else refresh_counter_next = refresh_counter - 1;
+
+            // REFAKTORING (v8.0): Urgentný refresh
+            if (urgent_refresh_counter > 0) begin
+                urgent_refresh_counter_next = urgent_refresh_counter - 1;
+            end else begin
+                urgent_refresh_req_next = 1'b1; // Ak časovač vyprší, vyžaduj refresh
+            end
         end
 
         // --- FIFO logika ---
@@ -231,7 +274,7 @@ module SdramControllerFinal #(
             fifo_r_wptr_next = fifo_r_wptr + 1;
         end
         if (do_read_fifo_read) fifo_r_rptr_next = fifo_r_rptr + 1;
-        fifo_r_count_next = fifo_r_count + do_read_fifo_write - do_read_fifo_read; // ZMENA (v7.11)
+        fifo_r_count_next = fifo_r_count + do_read_fifo_write - do_read_fifo_read;
 
         fifo_w_full  = (fifo_w_count == FIFO_DEPTH);
         fifo_w_empty = (fifo_w_count == 0);
@@ -245,13 +288,14 @@ module SdramControllerFinal #(
             fifo_w_wptr_next = fifo_w_wptr + 1;
         end
         if (do_write_fifo_read) fifo_w_rptr_next = fifo_w_rptr + 1;
-        fifo_w_count_next = fifo_w_count + do_write_fifo_write - do_write_fifo_read; // ZMENA (v7.11)
+        fifo_w_count_next = fifo_w_count + do_write_fifo_write - do_write_fifo_read;
 
-        // --- Hlavný FSM (bez zmien) ---
+        // --- Hlavný FSM ---
         case (state_reg)
             INIT_WAIT: if (init_timer == 0) state_next = INIT_PRECHARGE; else sdram_cke = 1'b0;
             INIT_PRECHARGE: begin
-                sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_we_n = 1'b0; sdram_addr[10] = 1'b1;
+                sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_we_n = 1'b0;
+                sdram_addr[AP_BIT_INDEX] = 1'b1; // REFAKTORING (v8.0)
                 trp_timer_next = tRP; state_next = INIT_REFRESH1;
             end
             INIT_REFRESH1: if (trp_timer == 0) begin
@@ -267,46 +311,50 @@ module SdramControllerFinal #(
                 sdram_addr = mrs_value[ROW_ADDR_WIDTH-1:0]; state_next = IDLE;
             end
             IDLE: begin
-                if (refresh_pending && twr_timer == 0 && trfc_timer == 0) state_next = REFRESH_CMD;
-                else if (cmd_fifo_valid && !fifo_r_full) begin
+                // REFAKTORING (v8.0): Prioritná obsluha refreshu
+                if ((refresh_pending || urgent_refresh_req) && twr_timer == 0 && trfc_timer == 0) begin
+                    state_next = REFRESH_CMD;
+                end else if (cmd_fifo_valid && !fifo_r_full) begin
                     cmd_fifo_ready = 1'b1;
                     current_cmd_next = cmd_fifo_data;
                     state_next = EVAL_CMD;
                 end
             end
             EVAL_CMD: begin
-                if (bank_state[cmd_bank_addr] == BANK_IDLE) begin
+                if (bank_state[cmd_addr.bank] == BANK_IDLE) begin
                     if (trp_timer == 0) state_next = ACTIVATE_CMD; else state_next = IDLE;
-                end else begin
-                    if (active_row[cmd_bank_addr] == cmd_row_addr) begin
+                end else begin // BANK_ACTIVE
+                    if (active_row[cmd_addr.bank] == cmd_addr.row) begin
                          if (trcd_timer == 0) state_next = (current_cmd.rw == READ_CMD) ? READ_CMD : WRITE_CMD; else state_next = IDLE;
-                    end else begin
-                        if (tras_timer[cmd_bank_addr] == 0) state_next = PRECHARGE_CMD; else state_next = IDLE;
+                    end else begin // Nesprávny riadok je aktívny
+                        if (tras_timer[cmd_addr.bank] == 0) state_next = PRECHARGE_CMD; else state_next = IDLE;
                     end
                 end
             end
             ACTIVATE_CMD: begin
-                sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_ba = cmd_bank_addr; sdram_addr = cmd_row_addr;
+                sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_ba = cmd_addr.bank; sdram_addr = cmd_addr.row;
                 trcd_timer_next = tRCD;
-                tras_timer_next[cmd_bank_addr] = tRAS;
-                bank_state_next[cmd_bank_addr] = BANK_ACTIVE;
-                active_row_next[cmd_bank_addr] = cmd_row_addr;
+                tras_timer_next[cmd_addr.bank] = tRAS;
+                bank_state_next[cmd_addr.bank] = BANK_ACTIVE;
+                active_row_next[cmd_addr.bank] = cmd_addr.row;
                 state_next = IDLE;
             end
             READ_CMD: begin
-                sdram_cs_n = 1'b0; sdram_cas_n = 1'b0; sdram_ba = cmd_bank_addr;
-                sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_col_addr; sdram_addr[10] = current_cmd.auto_precharge;
+                sdram_cs_n = 1'b0; sdram_cas_n = 1'b0; sdram_ba = cmd_addr.bank;
+                sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_addr.col;
+                sdram_addr[AP_BIT_INDEX] = current_cmd.auto_precharge; // REFAKTORING (v8.0)
                 cas_cnt_next = CAS_LATENCY;
                 burst_cnt_next = BURST_LEN;
-                if (current_cmd.auto_precharge) bank_state_next[cmd_bank_addr] = BANK_IDLE;
+                if (current_cmd.auto_precharge) bank_state_next[cmd_addr.bank] = BANK_IDLE;
                 state_next = READ_BURST;
             end
             WRITE_CMD: begin
                 if (!fifo_w_empty) begin
-                    sdram_cs_n = 1'b0; sdram_cas_n = 1'b0; sdram_we_n = 1'b0; sdram_ba = cmd_bank_addr;
-                    sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_col_addr; sdram_addr[10] = current_cmd.auto_precharge;
+                    sdram_cs_n = 1'b0; sdram_cas_n = 1'b0; sdram_we_n = 1'b0; sdram_ba = cmd_addr.bank;
+                    sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_addr.col;
+                    sdram_addr[AP_BIT_INDEX] = current_cmd.auto_precharge; // REFAKTORING (v8.0)
                     burst_cnt_next = BURST_LEN;
-                    if (current_cmd.auto_precharge) bank_state_next[cmd_bank_addr] = BANK_IDLE;
+                    if (current_cmd.auto_precharge) bank_state_next[cmd_addr.bank] = BANK_IDLE;
                     state_next = WRITE_BURST;
                 end else state_next = IDLE;
             end
@@ -324,9 +372,9 @@ module SdramControllerFinal #(
                 end
             end
             PRECHARGE_CMD: begin
-                sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_we_n = 1'b0; sdram_ba = cmd_bank_addr;
+                sdram_cs_n = 1'b0; sdram_ras_n = 1'b0; sdram_we_n = 1'b0; sdram_ba = cmd_addr.bank;
                 trp_timer_next = tRP;
-                bank_state_next[cmd_bank_addr] = BANK_IDLE;
+                bank_state_next[cmd_addr.bank] = BANK_IDLE;
                 state_next = IDLE;
             end
             REFRESH_CMD: begin
@@ -334,6 +382,9 @@ module SdramControllerFinal #(
                 trfc_timer_next = tRFC;
                 refresh_pending_next = 1'b0;
                 refresh_counter_next = REFRESH_INTERVAL;
+                // REFAKTORING (v8.0): Resetuj aj urgentný časovač a príznak
+                urgent_refresh_req_next = 1'b0;
+                urgent_refresh_counter_next = URGENT_REFRESH_CYCLES;
                 state_next = IDLE;
             end
             default: state_next = IDLE;

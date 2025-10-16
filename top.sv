@@ -108,12 +108,9 @@ module top (
 
             framebuffer_ctrl #(
               .C_OP_MODE(NORMAL),
-              .CLOCK_FREQ_HZ(AxiClockHz),
               .H_RES(H_RES),
               .V_RES(V_RES)
               ) u_framebuffer (
-                .axi_clk_i(clk_2),
-                .axi_rst_ni(rstn_sync_2),
                 .clk_i(clk_2),
                 .clk_sh_i(clk_3),
                 .rst_ni(rstn_sync_2),
@@ -129,7 +126,8 @@ module top (
                 .sdram_we_n(SDRAM_WE_N),
                 .sdram_ras_n(SDRAM_RAS_N),
                 .sdram_dqm({SDRAM_UDQM, SDRAM_LDQM}),
-                .debug_led_o(LED_J11)
+                .debug_led_0_o(LED_J10),
+                .debug_led_1_o(LED_J11)
             );
 
             axis_to_vga #(
@@ -154,12 +152,13 @@ module top (
             assign VGA_R = vga_rgb.red;
             assign VGA_G = vga_rgb.grn;
             assign VGA_B = vga_rgb.blu;
+/*
             assign LED_J10[0] = fifo_empty;
             assign LED_J10[1] = fifo_full;
             assign LED_J10[2] = hde;
             assign LED_J10[3] = vde;
             assign LED_J10[4] = |gen_to_fb_if.TDATA;
-
+*/
         // ----------------------------------------------------------------------
         // -- REŽIM 1: Test fyzickej SDRAM
         // ----------------------------------------------------------------------
