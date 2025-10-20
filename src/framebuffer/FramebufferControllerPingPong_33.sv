@@ -51,6 +51,7 @@ import sdram_pkg::*;
 // ============================================================================
 // Countdown Timer (generický)
 // ============================================================================
+/*
 module CountdownTimer #(
     parameter int COUNT_WIDTH = 4
 )(
@@ -74,80 +75,314 @@ module CountdownTimer #(
         done = (count_reg == 0);
     end
 endmodule
+*/
+module CountdownTimer #(
+    parameter int COUNT_WIDTH = 4,
+    parameter bit ASYNC_RESET = 1,    // 1 = asynchrónny reset, 0 = synchrónny reset
+    parameter bit DONE_REGISTERED = 0 // 1 = registrovaný výstup, 0 = combinational
+)(
+    input  logic clk,
+    input  logic rstn,                // aktívny nízky reset
+    input  logic load,
+    input  logic [COUNT_WIDTH-1:0] load_val,
+    output logic done
+);
+    logic [COUNT_WIDTH-1:0] count_reg, count_next;
+    logic done_next;
 
-// ============================================================================
-// Async FIFO (dual-clock, generický)
-// ============================================================================
-module AsyncFifoGeneric #(
-    parameter int DATA_WIDTH = 16,
+    // Hybridný reset: asynchrónny alebo synchrónny
+    generate
+        if (ASYNC_RESET) begin : g_async_reset_block
+            always_ff @(posedge clk or negedge rstn) begin
+                if (!rstn)
+                    count_reg <= '0;
+                else
+                    count_reg <= count_next;
+            end
+        end else begin : g_sync_reset_block
+            always_ff @(posedge clk) begin
+                if (!rstn)
+                    count_reg <= '0;
+                else
+                    count_reg <= count_next;
+            end
+        end
+    endgenerate
+
+    // logika odpočtu
+    always_comb begin
+        if (load)
+            count_next = load_val;
+        else if (count_reg > '0)
+            count_next = count_reg - 1;
+        else
+            count_next = count_reg;
+
+        done_next = (count_reg == '0);
+    end
+
+    // Výstup done: combinational alebo registrovaný
+    generate
+        if (DONE_REGISTERED) begin : g_done_reg_block
+            if (ASYNC_RESET) begin : g_done_async_reset
+                always_ff @(posedge clk or negedge rstn) begin
+                    if (!rstn)
+                        done <= 0;
+                    else
+                        done <= done_next;
+                end
+            end else begin : g_done_sync_reset
+                always_ff @(posedge clk) begin
+                    if (!rstn)
+                        done <= 0;
+                    else
+                        done <= done_next;
+                end
+            end
+        end else begin : g_done_comb_block
+            assign done = done_next;
+        end
+    endgenerate
+
+endmodule
+
+// ------------------------------------------------------------
+// PointerSync: Generic pointer increment & Gray synchronization
+// ------------------------------------------------------------
+module PointerSync #(
+    parameter int ADDR_WIDTH = 4,
+    parameter bit ASYNC_RESET = 1,
+    parameter bit TWO_STAGE_SYNC = 1
+)(
+    input  logic clk,
+    input  logic rstn,
+    input  logic en,
+    output logic [ADDR_WIDTH:0] bin_ptr_out,
+    input  logic [ADDR_WIDTH:0] other_gray_in,
+    output logic [ADDR_WIDTH:0] other_gray_sync_out
+);
+    logic [ADDR_WIDTH:0] other_gray_sync1;
+
+    generate
+        if (ASYNC_RESET) begin : g_async_reset
+            always_ff @(posedge clk or negedge rstn) begin
+                if (!rstn) begin
+                    bin_ptr_out <= '0;
+                    other_gray_sync1 <= '0;
+                    other_gray_sync_out <= '0;
+                end else begin
+                    if (en)
+                      bin_ptr_out <= bin_ptr_out + 1;
+
+                    other_gray_sync1 <= other_gray_in;
+                    if (TWO_STAGE_SYNC)
+                        other_gray_sync_out <= other_gray_sync1;
+                    else
+                        other_gray_sync_out <= other_gray_in;
+                end
+            end
+        end else begin : g_sync_reset
+            always_ff @(posedge clk) begin
+                if (!rstn) begin
+                    bin_ptr_out <= '0;
+                    other_gray_sync1 <= '0;
+                    other_gray_sync_out <= '0;
+                end else begin
+                    if (en)
+                      bin_ptr_out <= bin_ptr_out + 1;
+
+                    other_gray_sync1 <= other_gray_in;
+                    if (TWO_STAGE_SYNC)
+                        other_gray_sync_out <= other_gray_sync1;
+                    else
+                        other_gray_sync_out <= other_gray_in;
+                end
+            end
+        end
+    endgenerate
+endmodule
+
+// ------------------------------------------------------------
+// GrayToBin: Converts Gray code to binary
+// ------------------------------------------------------------
+module GrayToBin #(
     parameter int ADDR_WIDTH = 4
+)(
+    input  logic [ADDR_WIDTH:0] gray,
+    output logic [ADDR_WIDTH:0] bin
+);
+  assign bin[ADDR_WIDTH] = gray[ADDR_WIDTH];
+  genvar i;
+  generate
+    for (i = ADDR_WIDTH-1; i >= 0; i=i-1) begin : g_gray2bin
+      assign bin[i] = bin[i+1] ^ gray[i];
+    end
+  endgenerate
+endmodule
+
+// ------------------------------------------------------------
+// AsyncFifoGeneric: Asynchronous FIFO with safety flags
+// Features:
+//   - Optional 2-step Gray synchronizer for CDC safety
+//   - Supports asynchronous or synchronous reset
+//   - Overflow / underflow detection
+//   - Safe FIFO level across clock domains
+//   - Parameterizable RAM style (M20K/M9K)
+// ------------------------------------------------------------
+module AsyncFifoGeneric #(
+    parameter int DATA_WIDTH       = 16,
+    parameter int ADDR_WIDTH       = 4,
+    parameter bit ASYNC_RESET      = 1,
+    parameter string RAM_STYLE     = "M20K",
+    parameter bit TWO_STAGE_SYNC   = 1
 )(
     input  logic rstn,
     input  logic wr_clk,
     input  logic wr_en,
     input  logic [DATA_WIDTH-1:0] wr_data,
     output logic wr_full,
+    output logic wr_overflow,
     input  logic rd_clk,
     input  logic rd_en,
     output logic [DATA_WIDTH-1:0] rd_data,
     output logic rd_empty,
-    output logic [$clog2(1<<ADDR_WIDTH):0] level // Zvýšená šírka pre presný výpočet
+    output logic rd_underflow,
+    output logic [$clog2(1<<ADDR_WIDTH):0] level
 );
+
     localparam int DEPTH = 1 << ADDR_WIDTH;
-    (* ramstyle = "M20K" *) logic [DATA_WIDTH-1:0] mem [DEPTH-1:0];
 
-    logic [ADDR_WIDTH:0] wr_ptr_bin, wr_ptr_bin_next;
-    logic [ADDR_WIDTH:0] rd_ptr_bin, rd_ptr_bin_next;
+    // Memory block
+    (* ramstyle = RAM_STYLE *) logic [DATA_WIDTH-1:0] mem [DEPTH];
+
+    // Pointer signals
+    logic [ADDR_WIDTH:0] wr_ptr_bin, rd_ptr_bin;
     logic [ADDR_WIDTH:0] wr_ptr_gray, rd_ptr_gray;
-    logic [ADDR_WIDTH:0] wr_ptr_gray_sync1, wr_ptr_gray_sync2;
-    logic [ADDR_WIDTH:0] rd_ptr_gray_sync1, rd_ptr_gray_sync2;
-    logic [ADDR_WIDTH:0] rd_ptr_bin_synced_to_wr_clk, rd_ptr_bin_synced_to_wr_clk_s1;
 
-    always_ff @(posedge wr_clk) begin
-        if (!rstn) begin
-            wr_ptr_bin <= 'b0;
-            rd_ptr_gray_sync1 <= 'b0;
-            rd_ptr_gray_sync2 <= 'b0;
-        end else begin
-            wr_ptr_bin <= wr_ptr_bin_next;
-            rd_ptr_gray_sync1 <= rd_ptr_gray;
-            rd_ptr_gray_sync2 <= rd_ptr_gray_sync1;
+    logic [ADDR_WIDTH:0] wr_ptr_gray_sync2;
+    logic [ADDR_WIDTH:0] rd_ptr_gray_sync2;
+
+    logic [ADDR_WIDTH:0] rd_ptr_bin_from_gray_sync;
+
+    // ---------------------------
+    // Write domain with pointer sync
+    // ---------------------------
+    PointerSync #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .ASYNC_RESET(ASYNC_RESET),
+        .TWO_STAGE_SYNC(TWO_STAGE_SYNC)
+    ) wr_sync_inst (
+        .clk(wr_clk),
+        .rstn(rstn),
+        .en(wr_en && !wr_full),
+        .bin_ptr_out(wr_ptr_bin),
+        .other_gray_in(rd_ptr_gray),
+        .other_gray_sync_out(rd_ptr_gray_sync2)
+    );
+
+    generate
+        // Memory write + overflow detection
+        if (ASYNC_RESET) begin : g_wr_async_reset
+            always_ff @(posedge wr_clk or negedge rstn) begin
+                if (!rstn)
+                    wr_overflow <= 1'b0;
+                else begin
+                    if (wr_en) begin
+                        if (!wr_full) begin
+                            mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
+                            wr_overflow <= 1'b0;
+                        end else begin
+                            wr_overflow <= 1'b1; // Write attempted to full FIFO
+                        end
+                    end else begin
+                        wr_overflow <= 1'b0;
+                    end
+                end
+            end
+        end else begin : g_wr_sync_reset
+            always_ff @(posedge wr_clk) begin
+                if (!rstn)
+                    wr_overflow <= 1'b0;
+                else begin
+                    if (wr_en) begin
+                        if (!wr_full) begin
+                            mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
+                            wr_overflow <= 1'b0;
+                        end else begin
+                            wr_overflow <= 1'b1; // Write attempted to full FIFO
+                        end
+                    end else begin
+                        wr_overflow <= 1'b0;
+                    end
+                end
+            end
         end
-    end
+    endgenerate
 
-    always_ff @(posedge wr_clk) begin
-        if (!rstn) begin
-             rd_ptr_bin_synced_to_wr_clk <= 'b0;
-             rd_ptr_bin_synced_to_wr_clk_s1 <= 'b0;
-        end else begin
-             rd_ptr_bin_synced_to_wr_clk_s1 <= rd_ptr_bin;
-             rd_ptr_bin_synced_to_wr_clk <= rd_ptr_bin_synced_to_wr_clk_s1;
-        end
-    end
-
-    assign wr_ptr_bin_next = (wr_en && !wr_full) ? wr_ptr_bin + 1 : wr_ptr_bin;
+    // Gray code generation for write pointer
     assign wr_ptr_gray = (wr_ptr_bin >> 1) ^ wr_ptr_bin;
-    always_ff @(posedge wr_clk)
-        if (wr_en && !wr_full) mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
-    assign wr_full = (wr_ptr_gray == {~rd_ptr_gray_sync2[ADDR_WIDTH:ADDR_WIDTH-1], rd_ptr_gray_sync2[ADDR_WIDTH-2:0]});
-    assign level = wr_ptr_bin - rd_ptr_bin_synced_to_wr_clk;
 
-    always_ff @(posedge rd_clk) begin
-        if (!rstn) begin
-            rd_ptr_bin <= 'b0;
-            wr_ptr_gray_sync1 <= 'b0;
-            wr_ptr_gray_sync2 <= 'b0;
-        end else begin
-            rd_ptr_bin <= rd_ptr_bin_next;
-            wr_ptr_gray_sync1 <= wr_ptr_gray;
-            wr_ptr_gray_sync2 <= wr_ptr_gray_sync1;
-        end
-    end
-    assign rd_ptr_bin_next = (rd_en && !rd_empty) ? rd_ptr_bin + 1 : rd_ptr_bin;
+    // Full flag (safety via Gray synchronized pointer)
+    assign wr_full = (wr_ptr_gray == {~rd_ptr_gray_sync2[ADDR_WIDTH],   // Invertovaný MSB
+                    ~rd_ptr_gray_sync2[ADDR_WIDTH-1], // Invertovaný MSB-1
+                    rd_ptr_gray_sync2[ADDR_WIDTH-2:0]}); // Zvyšok
+
+    // ---------------------------
+    // Read domain with pointer sync
+    // ---------------------------
+    PointerSync #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .ASYNC_RESET(ASYNC_RESET),
+        .TWO_STAGE_SYNC(TWO_STAGE_SYNC)
+    ) rd_sync_inst (
+        .clk(rd_clk),
+        .rstn(rstn),
+        .en(rd_en && !rd_empty),
+        .bin_ptr_out(rd_ptr_bin),
+        .other_gray_in(wr_ptr_gray),
+        .other_gray_sync_out(wr_ptr_gray_sync2)
+    );
+
     assign rd_ptr_gray = (rd_ptr_bin >> 1) ^ rd_ptr_bin;
-    assign rd_data = mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
-    assign rd_empty = (rd_ptr_gray == wr_ptr_gray_sync2);
+    assign rd_data     = mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
+    assign rd_empty    = (rd_ptr_gray == wr_ptr_gray_sync2);
+
+    generate
+      if (ASYNC_RESET) begin : g_rd_async_reset
+        // Underflow detection
+        always_ff @(posedge rd_clk or negedge rstn) begin
+            if (!rstn)
+                rd_underflow <= 1'b0;
+            else if (rd_en)
+                rd_underflow <= rd_empty; // 1 if read attempted on empty
+            else
+                rd_underflow <= 1'b0;
+        end
+      end else begin : g_rd_sync_reset
+        // Underflow detection
+        always_ff @(posedge rd_clk) begin
+            if (!rstn)
+                rd_underflow <= 1'b0;
+            else if (rd_en)
+                rd_underflow <= rd_empty; // 1 if read attempted on empty
+            else
+                rd_underflow <= 1'b0;
+        end
+      end
+    endgenerate
+
+    // ---------------------------
+    // FIFO level calculation (safe CDC)
+    // ---------------------------
+    GrayToBin #(.ADDR_WIDTH(ADDR_WIDTH)) gray2bin_inst (
+        .gray(rd_ptr_gray_sync2),
+        .bin(rd_ptr_bin_from_gray_sync)
+    );
+
+    assign level = wr_ptr_bin - rd_ptr_bin_from_gray_sync;
+
 endmodule
+
 
 // ============================================================================
 // >>> FSM #1 (Moore) – SDRAM Controller
@@ -164,17 +399,33 @@ module SdramController #(
     parameter int CLOCK_FREQ_HZ   = 100_000_000,
     parameter int FIFO_ADDR_WIDTH = 6
 )(
-    input  logic clk, input  logic clk_sh, input  logic rstn,
-    input  sdram_cmd_t wr_cmd_data, input  logic wr_cmd_valid, output logic wr_cmd_ready,
-    input  sdram_cmd_t rd_cmd_data, input  logic rd_cmd_valid, output logic rd_cmd_ready,
-    input  logic [DATA_WIDTH-1:0] wdata, input  logic wdata_valid, output logic wdata_ready,
-    output logic [DATA_WIDTH-1:0] rdata, output logic rdata_valid, input  logic rdata_ready,
+    input  logic clk,
+    input  logic clk_sh,
+    input  logic rstn,
+    input  sdram_cmd_t wr_cmd_data,
+    input  logic wr_cmd_valid,
+    output logic wr_cmd_ready,
+    input  sdram_cmd_t rd_cmd_data,
+    input  logic rd_cmd_valid,
+    output logic rd_cmd_ready,
+    input  logic [DATA_WIDTH-1:0] wdata,
+    input  logic wdata_valid,
+    output logic wdata_ready,
+    output logic [DATA_WIDTH-1:0] rdata,
+    output logic rdata_valid,
+    input  logic rdata_ready,
     output logic [$clog2(1<<FIFO_ADDR_WIDTH)+1-1:0] rdata_level,
     output logic [$clog2(1<<FIFO_ADDR_WIDTH)+1-1:0] wdata_level,
-    output logic [ROW_ADDR_WIDTH-1:0] sdram_addr, output logic [BANK_ADDR_WIDTH-1:0] sdram_ba,
-    output logic sdram_cs_n, output logic sdram_ras_n, output logic sdram_cas_n, output logic sdram_we_n,
-    inout  wire  [DATA_WIDTH-1:0] sdram_dq, output logic [DATA_WIDTH/8-1:0] sdram_dqm,
-    output logic sdram_cke, output logic sdram_clk
+    output logic [ROW_ADDR_WIDTH-1:0] sdram_addr,
+    output logic [BANK_ADDR_WIDTH-1:0] sdram_ba,
+    output logic sdram_cs_n,
+    output logic sdram_ras_n,
+    output logic sdram_cas_n,
+    output logic sdram_we_n,
+    inout  wire  [DATA_WIDTH-1:0] sdram_dq,
+    output logic [DATA_WIDTH/8-1:0] sdram_dqm,
+    output logic sdram_cke,
+    output logic sdram_clk
 );
     localparam int NS_PER_SEC = 1_000_000_000;
     localparam int CLK_PERIOD_NS = NS_PER_SEC / CLOCK_FREQ_HZ;
@@ -211,9 +462,9 @@ module SdramController #(
     state_t state_reg, state_next;
 
     typedef enum logic { BANK_IDLE, BANK_ACTIVE } bank_state_t;
-    bank_state_t bank_state[NUM_BANKS-1:0], bank_state_next[NUM_BANKS-1:0];
-    logic [ROW_ADDR_WIDTH-1:0] active_row[NUM_BANKS-1:0], active_row_next[NUM_BANKS-1:0];
-    logic [$clog2(tRAS+1)-1:0] tras_timer[NUM_BANKS-1:0], tras_timer_next[NUM_BANKS-1:0];
+    bank_state_t bank_state[NUM_BANKS], bank_state_next[NUM_BANKS];
+    logic [ROW_ADDR_WIDTH-1:0] active_row[NUM_BANKS], active_row_next[NUM_BANKS];
+    logic [$clog2(tRAS+1)-1:0] tras_timer[NUM_BANKS], tras_timer_next[NUM_BANKS];
     logic load_trp, load_trcd, load_twr, load_trfc, load_init, load_trmrd;
     logic trp_done, trcd_done, twr_done, trfc_done, init_done, trmrd_done;
     logic [$clog2(REFRESH_INTERVAL+1)-1:0] refresh_counter, refresh_counter_next;
@@ -231,14 +482,39 @@ module SdramController #(
     logic wr_fifo_wr_en, wr_fifo_rd_en;
     logic rd_fifo_wr_en, rd_fifo_rd_en;
     logic [DATA_WIDTH-1:0] wr_fifo_rd_data;
-    CountdownTimer #($clog2(tRP+1))   trp_timer_inst (.clk(clk),.rstn(rstn),.load(load_trp),.load_val(tRP),.done(trp_done));
-    CountdownTimer #($clog2(tRCD+1))  trcd_timer_inst(.clk(clk),.rstn(rstn),.load(load_trcd),.load_val(tRCD),.done(trcd_done));
-    CountdownTimer #($clog2(tWR+1))   twr_timer_inst (.clk(clk),.rstn(rstn),.load(load_twr),.load_val(tWR),.done(twr_done));
-    CountdownTimer #($clog2(tRFC+1))  trfc_timer_inst(.clk(clk),.rstn(rstn),.load(load_trfc),.load_val(tRFC),.done(trfc_done));
-    CountdownTimer #($clog2(tMRD+1))  trmrd_timer_inst(.clk(clk),.rstn(rstn),.load(load_trmrd),.load_val(tMRD),.done(trmrd_done));
-    CountdownTimer #($clog2(INIT_WAIT_CYCLES+1)) init_timer_inst(.clk(clk),.rstn(rstn),.load(load_init),.load_val(INIT_WAIT_CYCLES),.done(init_done));
-    AsyncFifoGeneric #(.DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH)) write_fifo_inst(.rstn(rstn),.wr_clk(clk),.wr_en(wr_fifo_wr_en),.wr_data(wdata),.wr_full(wr_fifo_full),.rd_clk(clk),.rd_en(wr_fifo_rd_en),.rd_data(wr_fifo_rd_data),.rd_empty(wr_fifo_empty),.level(wdata_level));
-    AsyncFifoGeneric #(.DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH)) read_fifo_inst(.rstn(rstn),.wr_clk(clk),.wr_en(rd_fifo_wr_en),.wr_data(sdram_dq),.wr_full(rd_fifo_full),.rd_clk(clk),.rd_en(rd_fifo_rd_en),.rd_data(rdata),.rd_empty(rd_fifo_empty),.level(rdata_level));
+
+    CountdownTimer #(.COUNT_WIDTH($clog2(tRP+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
+      trp_timer_inst (.clk(clk),.rstn(rstn),.load(load_trp),.load_val(tRP),.done(trp_done));
+    CountdownTimer #(.COUNT_WIDTH($clog2(tRCD+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
+      trcd_timer_inst(.clk(clk),.rstn(rstn),.load(load_trcd),.load_val(tRCD),.done(trcd_done));
+    CountdownTimer #(.COUNT_WIDTH($clog2(tWR+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
+      twr_timer_inst (.clk(clk),.rstn(rstn),.load(load_twr),.load_val(tWR),.done(twr_done));
+    CountdownTimer #(.COUNT_WIDTH($clog2(tRFC+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
+      trfc_timer_inst(.clk(clk),.rstn(rstn),.load(load_trfc),.load_val(tRFC),.done(trfc_done));
+    CountdownTimer #(.COUNT_WIDTH($clog2(tMRD+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
+      trmrd_timer_inst(.clk(clk),.rstn(rstn),.load(load_trmrd),.load_val(tMRD),.done(trmrd_done));
+    CountdownTimer #(.COUNT_WIDTH($clog2(INIT_WAIT_CYCLES+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
+      init_timer_inst(.clk(clk),.rstn(rstn),.load(load_init),.load_val(INIT_WAIT_CYCLES),.done(init_done));
+
+    AsyncFifoGeneric #(
+      .DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH),
+      .ASYNC_RESET(0),.RAM_STYLE("M20K"),.TWO_STAGE_SYNC(1)
+      ) write_fifo_inst (
+        .rstn(rstn),
+        .wr_clk(clk),.wr_en(wr_fifo_wr_en),.wr_data(wdata),.wr_full(wr_fifo_full),
+        .rd_clk(clk),.rd_en(wr_fifo_rd_en),.rd_data(wr_fifo_rd_data),.rd_empty(wr_fifo_empty),
+        .level(wdata_level)
+      );
+
+    AsyncFifoGeneric #(
+      .DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH),
+      .ASYNC_RESET(0),.RAM_STYLE("M20K"),.TWO_STAGE_SYNC(1)
+      ) read_fifo_inst (
+        .rstn(rstn),
+        .wr_clk(clk),.wr_en(rd_fifo_wr_en),.wr_data(sdram_dq),.wr_full(rd_fifo_full),
+        .rd_clk(clk),.rd_en(rd_fifo_rd_en),.rd_data(rdata),.rd_empty(rd_fifo_empty),
+        .level(rdata_level)
+      );
 
     // --- hlavná Moore FSM logika ---
     always_comb begin
@@ -247,14 +523,17 @@ module SdramController #(
         selected_cmd = '{default:'0};
         rd_cmd_ready = 1'b0;
         wr_cmd_ready = 1'b0;
+
         if (rd_cmd_valid) begin
             selected_cmd_valid = 1'b1;
             selected_cmd = rd_cmd_data;
-            if (fsm_ready_for_cmd) rd_cmd_ready = 1'b1;
+            if (fsm_ready_for_cmd)
+              rd_cmd_ready = 1'b1;
         end else if (wr_cmd_valid) begin
             selected_cmd_valid = 1'b1;
             selected_cmd = wr_cmd_data;
-            if (fsm_ready_for_cmd) wr_cmd_ready = 1'b1;
+            if (fsm_ready_for_cmd)
+              wr_cmd_ready = 1'b1;
         end
     end
 
@@ -360,23 +639,62 @@ module FramebufferController #(
     parameter int FRAME_WIDTH  = 800,
     parameter int FRAME_HEIGHT = 600
 )(
-    input  logic clk, input  logic clk_sh, input  logic rstn,
-    input  logic s_axis_valid, output logic s_axis_ready, input  logic [DATA_WIDTH-1:0] s_axis_data, input  logic s_axis_last,
-    output logic m_axis_valid, input  logic m_axis_ready, output logic [DATA_WIDTH-1:0] m_axis_data, output logic m_axis_last,
-    output logic [ROW_ADDR_WIDTH-1:0] sdram_addr, output logic [BANK_ADDR_WIDTH-1:0] sdram_ba,
-    output logic sdram_cs_n, output logic sdram_ras_n, output logic sdram_cas_n, output logic sdram_we_n,
-    inout  wire  [DATA_WIDTH-1:0] sdram_dq, output logic [DATA_WIDTH/8-1:0] sdram_dqm,
-    output logic sdram_cke, output logic sdram_clk,
-    output logic [7:0] debug_led_0_o, output logic [7:0] debug_led_1_o
+    input  logic clk,
+    input  logic clk_sh,
+    input  logic rstn,
+
+    // AXI Stream Slave Interface (input frame data)
+    input  logic s_axis_valid,
+    output logic s_axis_ready,
+    input  logic [DATA_WIDTH-1:0] s_axis_data,
+    input  logic s_axis_last,
+
+    // AXI Stream Master Interface (output frame data)
+    output logic m_axis_valid,
+    input  logic m_axis_ready,
+    output logic [DATA_WIDTH-1:0] m_axis_data,
+    output logic m_axis_last,
+
+    // SDRAM interface
+    output logic [ROW_ADDR_WIDTH-1:0] sdram_addr,
+    output logic [BANK_ADDR_WIDTH-1:0] sdram_ba,
+    output logic sdram_cs_n,
+    output logic sdram_ras_n,
+    output logic sdram_cas_n,
+    output logic sdram_we_n,
+    inout  wire  [DATA_WIDTH-1:0] sdram_dq,
+    output logic [DATA_WIDTH/8-1:0] sdram_dqm,
+    output logic sdram_cke,
+    output logic sdram_clk,
+
+    // Debug LEDs
+    output logic [7:0] debug_led_0_o,
+    output logic [7:0] debug_led_1_o
 );
-    localparam int FIFO_ADDR_WIDTH = 6;
-    localparam int FRAME_SIZE_WORDS = FRAME_WIDTH * FRAME_HEIGHT;
-    localparam int ADDR_WIDTH_TOTAL = ROW_ADDR_WIDTH + COL_ADDR_WIDTH + BANK_ADDR_WIDTH;
+
+    // --------------------------------------------------
+    // Local parameters
+    // --------------------------------------------------
+    localparam int FIFO_ADDR_WIDTH   = 6;
+    localparam int FRAME_SIZE_WORDS  = FRAME_WIDTH * FRAME_HEIGHT;
+    localparam int ADDR_WIDTH_TOTAL  = ROW_ADDR_WIDTH + COL_ADDR_WIDTH + BANK_ADDR_WIDTH;
+
+    // Base addresses of frame buffers in SDRAM
     localparam logic [ADDR_WIDTH_TOTAL-1:0] FRAME_A_BASE_ADDR = 'b0;
     localparam logic [ADDR_WIDTH_TOTAL-1:0] FRAME_B_BASE_ADDR = FRAME_SIZE_WORDS;
+
+    // FIFO read/write thresholds
+    localparam int READ_THRESHOLD = 32;
+
+    // --------------------------------------------------
+    // Type definitions
+    // --------------------------------------------------
     typedef enum logic {BUF_A, BUF_B} active_buf_t;
     typedef enum logic [1:0] {EMPTY, FILLING, FULL, READING} buffer_state_t;
 
+    // --------------------------------------------------
+    // Registers / Signals
+    // --------------------------------------------------
     buffer_state_t buf_a_state, buf_b_state;
     active_buf_t   write_buf, read_buf;
     logic          swap_buffers_req;
@@ -384,122 +702,223 @@ module FramebufferController #(
     sdram_cmd_t wr_cmd_data, rd_cmd_data;
     logic       wr_cmd_valid, rd_cmd_valid;
     logic       wr_cmd_ready, rd_cmd_ready;
-    logic [$clog2(1<<(FIFO_ADDR_WIDTH))+1-1:0] rdata_level, wdata_level;
+    logic [FIFO_ADDR_WIDTH:0] rdata_level, wdata_level; // FIFO levels (+1 for safe margin)
     logic [ADDR_WIDTH_TOTAL-1:0] wr_full_addr, rd_full_addr;
     logic       first_frame_done;
 
-    // OPRAVA: Počítadlo pre generovanie m_axis_last
+    // Counter for generating m_axis_last
     logic [$clog2(FRAME_WIDTH)-1:0] m_axis_x_cnt;
 
+    // --------------------------------------------------
+    // SDRAM Controller Instance
+    // --------------------------------------------------
     SdramController #(.FIFO_ADDR_WIDTH(FIFO_ADDR_WIDTH)) sdram_inst (
-        .clk(clk),.clk_sh(clk_sh),.rstn(rstn),
-        .wr_cmd_data(wr_cmd_data),.wr_cmd_valid(wr_cmd_valid),.wr_cmd_ready(wr_cmd_ready),
-        .rd_cmd_data(rd_cmd_data),.rd_cmd_valid(rd_cmd_valid),.rd_cmd_ready(rd_cmd_ready),
-        .wdata(s_axis_data),.wdata_valid(s_axis_valid),.wdata_ready(s_axis_ready),
-        .rdata(m_axis_data),.rdata_valid(m_axis_valid),.rdata_ready(m_axis_ready),.rdata_level(rdata_level),
+        .clk(clk),
+        .clk_sh(clk_sh),
+        .rstn(rstn),
+        // Write interface
+        .wr_cmd_data(wr_cmd_data),
+        .wr_cmd_valid(wr_cmd_valid),
+        .wr_cmd_ready(wr_cmd_ready),
+        .wdata(s_axis_data),
+        .wdata_valid(s_axis_valid),
+        .wdata_ready(s_axis_ready),
+        // Read interface
+        .rd_cmd_data(rd_cmd_data),
+        .rd_cmd_valid(rd_cmd_valid),
+        .rd_cmd_ready(rd_cmd_ready),
+        .rdata(m_axis_data),
+        .rdata_valid(m_axis_valid),
+        .rdata_ready(m_axis_ready),
+        .rdata_level(rdata_level),
         .wdata_level(wdata_level),
-        .sdram_addr(sdram_addr),.sdram_ba(sdram_ba),.sdram_cs_n(sdram_cs_n),.sdram_ras_n(sdram_ras_n),
-        .sdram_cas_n(sdram_cas_n),.sdram_we_n(sdram_we_n),.sdram_dq(sdram_dq),.sdram_dqm(sdram_dqm),
-        .sdram_cke(sdram_cke),.sdram_clk(sdram_clk)
+        // SDRAM signals
+        .sdram_addr(sdram_addr),
+        .sdram_ba(sdram_ba),
+        .sdram_cs_n(sdram_cs_n),
+        .sdram_ras_n(sdram_ras_n),
+        .sdram_cas_n(sdram_cas_n),
+        .sdram_we_n(sdram_we_n),
+        .sdram_dq(sdram_dq),
+        .sdram_dqm(sdram_dqm),
+        .sdram_cke(sdram_cke),
+        .sdram_clk(sdram_clk)
     );
 
-
+    // --------------------------------------------------
+    // Double Buffer State Machine
+    // --------------------------------------------------
     always_ff @(posedge clk) begin
         if (!rstn) begin
-            buf_a_state <= EMPTY; buf_b_state <= EMPTY; write_buf <= BUF_A; read_buf <= BUF_B; first_frame_done <= 1'b0;
+            buf_a_state <= EMPTY;
+            buf_b_state <= EMPTY;
+            write_buf   <= BUF_A;
+            read_buf    <= BUF_B;
+            first_frame_done <= 1'b0;
         end else begin
+            // Swap buffers when requested
             if (swap_buffers_req) begin
-                write_buf <= read_buf; read_buf <= write_buf; first_frame_done <= 1'b1;
+                write_buf <= read_buf;
+                read_buf  <= write_buf;
+                first_frame_done <= 1'b1;
             end
+
+            // Buffer A state machine
             case (buf_a_state)
-                EMPTY:   if (write_buf == BUF_A) buf_a_state <= FILLING;
-                FILLING: if (write_addr_cnt == FRAME_SIZE_WORDS - 1) buf_a_state <= FULL;
-                FULL:    if (read_buf == BUF_A && first_frame_done) buf_a_state <= READING;
-                READING: if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN) buf_a_state <= EMPTY;
+                EMPTY:   begin
+                  if (write_buf == BUF_A)
+                    buf_a_state <= FILLING;
+                end
+                FILLING: begin
+                  if (write_addr_cnt == FRAME_SIZE_WORDS - 1)
+                    buf_a_state <= FULL;
+                end
+                FULL:    begin
+                  if (read_buf == BUF_A && first_frame_done)
+                    buf_a_state <= READING;
+                end
+                READING: begin
+                  if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
+                    buf_a_state <= EMPTY;
+                end
             endcase
+
+            // Buffer B state machine
             case (buf_b_state)
-                EMPTY:   if (write_buf == BUF_B) buf_b_state <= FILLING;
-                FILLING: if (write_addr_cnt == FRAME_SIZE_WORDS - 1) buf_b_state <= FULL;
-                FULL:    if (read_buf == BUF_B && first_frame_done) buf_b_state <= READING;
-                READING: if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN) buf_b_state <= EMPTY;
+                EMPTY:   begin
+                  if (write_buf == BUF_B)
+                    buf_b_state <= FILLING;
+                end
+                FILLING: begin
+                  if (write_addr_cnt == FRAME_SIZE_WORDS - 1)
+                    buf_b_state <= FULL;
+                end
+                FULL:    begin
+                  if (read_buf == BUF_B && first_frame_done)
+                    buf_b_state <= READING;
+                end
+                READING: begin
+                  if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
+                    buf_b_state <= EMPTY;
+                end
             endcase
         end
     end
 
-    assign swap_buffers_req = (write_buf == BUF_A ? (buf_a_state == FULL) : (buf_b_state == FULL)) && (read_buf == BUF_A ? (buf_a_state == EMPTY) : (buf_b_state == EMPTY));
+    // Swap buffers request logic (readable version)
+    always_comb begin
+        swap_buffers_req = 1'b0;
+        if (write_buf == BUF_A && buf_a_state == FULL && read_buf == BUF_B && buf_b_state == EMPTY)
+            swap_buffers_req = 1'b1;
+        else if (write_buf == BUF_B && buf_b_state == FULL && read_buf == BUF_A && buf_a_state == EMPTY)
+            swap_buffers_req = 1'b1;
+    end
 
-    // --- Write Command Generator ---
+    // --------------------------------------------------
+    // Write Command Generator
+    // --------------------------------------------------
     always_comb begin
         logic [ADDR_WIDTH_TOTAL-1:0] base_addr;
         base_addr = (write_buf == BUF_A) ? FRAME_A_BASE_ADDR : FRAME_B_BASE_ADDR;
         wr_full_addr = base_addr + wr_cmd_addr_cnt;
-        wr_cmd_data.addr.row  = wr_full_addr[COL_ADDR_WIDTH+BANK_ADDR_WIDTH+:ROW_ADDR_WIDTH];
-        wr_cmd_data.addr.bank = wr_full_addr[COL_ADDR_WIDTH+:BANK_ADDR_WIDTH];
-        wr_cmd_data.addr.col  = wr_full_addr[0+:COL_ADDR_WIDTH];
-        wr_cmd_data.rw        = 1'b1;
+
+        // Split full address into row/col/bank for SDRAM command
+        wr_cmd_data.addr.row  = wr_full_addr[COL_ADDR_WIDTH + BANK_ADDR_WIDTH +: ROW_ADDR_WIDTH];
+        wr_cmd_data.addr.bank = wr_full_addr[COL_ADDR_WIDTH +: BANK_ADDR_WIDTH];
+        wr_cmd_data.addr.col  = wr_full_addr[0 +: COL_ADDR_WIDTH];
+
+        wr_cmd_data.rw = 1'b1; // Write
         wr_cmd_data.auto_precharge = 1'b0;
+
+        // Valid when enough data in FIFO
         wr_cmd_valid = (wdata_level >= BURST_LEN);
     end
 
+    // Write address counter
     always_ff @(posedge clk) begin
-        if (!rstn) write_addr_cnt <= 'b0;
-        else if (swap_buffers_req) write_addr_cnt <= 'b0;
+        if (!rstn || swap_buffers_req)
+          write_addr_cnt <= '0;
         else if (s_axis_valid && s_axis_ready) begin
-            if (write_addr_cnt == FRAME_SIZE_WORDS - 1) write_addr_cnt <= 'b0;
-            else write_addr_cnt <= write_addr_cnt + 1;
+            if (write_addr_cnt == FRAME_SIZE_WORDS - 1)
+              write_addr_cnt <= '0;
+            else
+              write_addr_cnt <= write_addr_cnt + 1;
         end
     end
 
+    // Write command address counter
     always_ff @(posedge clk) begin
-        if (!rstn) wr_cmd_addr_cnt <= 'b0;
-        else if (swap_buffers_req) wr_cmd_addr_cnt <= 'b0;
+        if (!rstn || swap_buffers_req)
+          wr_cmd_addr_cnt <= '0;
         else if (wr_cmd_valid && wr_cmd_ready) begin
-            if (wr_cmd_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN) wr_cmd_addr_cnt <= 'b0;
-            else wr_cmd_addr_cnt <= wr_cmd_addr_cnt + BURST_LEN;
+            if (wr_cmd_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
+              wr_cmd_addr_cnt <= '0;
+            else
+              wr_cmd_addr_cnt <= wr_cmd_addr_cnt + BURST_LEN;
         end
     end
 
-    // --- Read Command Generator ---
+    // --------------------------------------------------
+    // Read Command Generator
+    // --------------------------------------------------
     always_comb begin
         logic [ADDR_WIDTH_TOTAL-1:0] base_addr;
         base_addr = (read_buf == BUF_A) ? FRAME_A_BASE_ADDR : FRAME_B_BASE_ADDR;
         rd_full_addr = base_addr + read_addr_cnt;
-        rd_cmd_data.addr.row  = rd_full_addr[COL_ADDR_WIDTH+BANK_ADDR_WIDTH+:ROW_ADDR_WIDTH];
-        rd_cmd_data.addr.bank = rd_full_addr[COL_ADDR_WIDTH+:BANK_ADDR_WIDTH];
-        rd_cmd_data.addr.col  = rd_full_addr[0+:COL_ADDR_WIDTH];
-        rd_cmd_data.rw        = 1'b0;
+
+        // Split full address into row/col/bank for SDRAM command
+        rd_cmd_data.addr.row  = rd_full_addr[COL_ADDR_WIDTH + BANK_ADDR_WIDTH +: ROW_ADDR_WIDTH];
+        rd_cmd_data.addr.bank = rd_full_addr[COL_ADDR_WIDTH +: BANK_ADDR_WIDTH];
+        rd_cmd_data.addr.col  = rd_full_addr[0 +: COL_ADDR_WIDTH];
+
+        rd_cmd_data.rw = 1'b0; // Read
         rd_cmd_data.auto_precharge = 1'b0;
-        rd_cmd_valid = first_frame_done && (rdata_level < 32) && (read_addr_cnt < FRAME_SIZE_WORDS - BURST_LEN) && (read_buf == BUF_A ? (buf_a_state == READING) : (buf_b_state == READING));
+
+        // Valid when frame ready, FIFO has space, and buffer in READING state
+        rd_cmd_valid = first_frame_done &&
+                       (rdata_level < READ_THRESHOLD) &&
+                       (read_addr_cnt < FRAME_SIZE_WORDS - BURST_LEN) &&
+                       ((read_buf == BUF_A) ? (buf_a_state == READING) : (buf_b_state == READING));
     end
+
+    // Read address counter
     always_ff @(posedge clk) begin
-        if (!rstn) read_addr_cnt <= 'b0;
-        else if (swap_buffers_req) read_addr_cnt <= 'b0;
+        if (!rstn || swap_buffers_req)
+          read_addr_cnt <= '0;
         else if (rd_cmd_valid && rd_cmd_ready) begin
-            if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN) read_addr_cnt <= 'b0;
-            else read_addr_cnt <= read_addr_cnt + BURST_LEN;
+            if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
+              read_addr_cnt <= '0;
+            else
+              read_addr_cnt <= read_addr_cnt + BURST_LEN;
         end
     end
 
-    // >>> FSM #4 (Moore) – m_axis_last generation
+    // --------------------------------------------------
+    // m_axis_last generation
+    // --------------------------------------------------
     always_ff @(posedge clk) begin
-        if (!rstn) begin
-            m_axis_x_cnt <= 'b0;
-        end else if (m_axis_valid && m_axis_ready) begin
-            if (m_axis_x_cnt == FRAME_WIDTH - 1) begin
-                m_axis_x_cnt <= 'b0;
-            end else begin
-                m_axis_x_cnt <= m_axis_x_cnt + 1;
-            end
+        if (!rstn)
+          m_axis_x_cnt <= '0;
+        else if (m_axis_valid && m_axis_ready) begin
+            if (m_axis_x_cnt == FRAME_WIDTH - 1)
+              m_axis_x_cnt <= '0;
+            else
+              m_axis_x_cnt <= m_axis_x_cnt + 1;
         end
     end
+
     assign m_axis_last = (m_axis_x_cnt == FRAME_WIDTH - 1);
 
+    // --------------------------------------------------
+    // Debug LED mapping
+    // --------------------------------------------------
     assign debug_led_0_o[1:0] = buf_a_state;
     assign debug_led_0_o[3:2] = buf_b_state;
     assign debug_led_0_o[4]   = write_buf;
     assign debug_led_0_o[5]   = read_buf;
     assign debug_led_0_o[6]   = swap_buffers_req;
     assign debug_led_0_o[7]   = first_frame_done;
+
     assign debug_led_1_o[0] = s_axis_valid;
     assign debug_led_1_o[1] = s_axis_ready;
     assign debug_led_1_o[2] = m_axis_valid;
@@ -508,7 +927,9 @@ module FramebufferController #(
     assign debug_led_1_o[5] = wr_cmd_ready;
     assign debug_led_1_o[6] = rd_cmd_valid;
     assign debug_led_1_o[7] = rd_cmd_ready;
+
 endmodule
+
 
 `endif // FRAMEBUFFER_PINGPONG_SDRAM_FINAL_SV
 

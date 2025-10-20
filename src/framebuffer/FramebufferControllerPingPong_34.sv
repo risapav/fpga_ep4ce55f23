@@ -125,7 +125,57 @@ module CountdownTimer #(
 
 endmodule
 
+// ------------------------------------------------------------
+// PointerSync: Generic pointer increment & Gray synchronization
+// ------------------------------------------------------------
+module PointerSync #(
+    parameter int ADDR_WIDTH = 4,
+    parameter bit ASYNC_RESET = 1,
+    parameter bit TWO_STAGE_SYNC = 1
+)(
+    input  logic clk,
+    input  logic rstn,
+    input  logic en,
+    input  logic [ADDR_WIDTH:0] bin_ptr_in,
+    output logic [ADDR_WIDTH:0] bin_ptr_out,
+    input  logic [ADDR_WIDTH:0] other_gray_in,
+    output logic [ADDR_WIDTH:0] other_gray_sync_out
+);
+    logic [ADDR_WIDTH:0] other_gray_sync1;
 
+    always_ff @(posedge clk or negedge rstn) begin
+        if (!rstn) begin
+            bin_ptr_out <= '0;
+            other_gray_sync1 <= '0;
+            other_gray_sync_out <= '0;
+        end else begin
+            if (en) bin_ptr_out <= bin_ptr_out + 1;
+            other_gray_sync1 <= other_gray_in;
+            if (TWO_STAGE_SYNC)
+                other_gray_sync_out <= other_gray_sync1;
+            else
+                other_gray_sync_out <= other_gray_in;
+        end
+    end
+endmodule
+
+// ------------------------------------------------------------
+// GrayToBin: Converts Gray code to binary
+// ------------------------------------------------------------
+module GrayToBin #(
+    parameter int ADDR_WIDTH = 4
+)(
+    input  logic [ADDR_WIDTH:0] gray,
+    output logic [ADDR_WIDTH:0] bin
+);
+    assign bin[ADDR_WIDTH] = gray[ADDR_WIDTH];
+    genvar i;
+    for (i = ADDR_WIDTH-1; i >= 0; i--) begin : gray2bin
+        assign bin[i] = bin[i+1] ^ gray[i];
+    end
+endmodule
+
+/*
 // ============================================================================
 // Async FIFO (dual-clock, generický)
 // ============================================================================
@@ -260,6 +310,128 @@ module AsyncFifoGeneric #(
     endgenerate
 
     // Výpočet zaplnenia FIFO (level) je teraz bezpečný voči CDC
+    assign level = wr_ptr_bin - rd_ptr_bin_from_gray_sync;
+
+endmodule
+*/
+
+// ------------------------------------------------------------
+// AsyncFifoGeneric: Asynchronous FIFO with safety flags
+// Features:
+//   - Optional 2-step Gray synchronizer for CDC safety
+//   - Supports asynchronous or synchronous reset
+//   - Overflow / underflow detection
+//   - Safe FIFO level across clock domains
+//   - Parameterizable RAM style (M20K/M9K)
+// ------------------------------------------------------------
+module AsyncFifoGeneric #(
+    parameter int DATA_WIDTH       = 16,
+    parameter int ADDR_WIDTH       = 4,
+    parameter bit ASYNC_RESET      = 1,
+    parameter string RAM_STYLE     = "M20K",
+    parameter bit TWO_STAGE_SYNC   = 1
+)(
+    input  logic rstn,
+    input  logic wr_clk,
+    input  logic wr_en,
+    input  logic [DATA_WIDTH-1:0] wr_data,
+    output logic wr_full,
+    output logic wr_overflow,
+    input  logic rd_clk,
+    input  logic rd_en,
+    output logic [DATA_WIDTH-1:0] rd_data,
+    output logic rd_empty,
+    output logic rd_underflow,
+    output logic [$clog2(1<<ADDR_WIDTH):0] level
+);
+
+    localparam int DEPTH = 1 << ADDR_WIDTH;
+
+    // Memory block
+    (* ramstyle = RAM_STYLE *) logic [DATA_WIDTH-1:0] mem [DEPTH];
+
+    // Pointer signals
+    logic [ADDR_WIDTH:0] wr_ptr_bin, rd_ptr_bin;
+    logic [ADDR_WIDTH:0] wr_ptr_gray, rd_ptr_gray;
+
+    logic [ADDR_WIDTH:0] wr_ptr_gray_sync2;
+    logic [ADDR_WIDTH:0] rd_ptr_gray_sync2;
+
+    logic [ADDR_WIDTH:0] rd_ptr_bin_from_gray_sync;
+
+    // ---------------------------
+    // Write domain
+    // ---------------------------
+    PointerSync #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .ASYNC_RESET(ASYNC_RESET),
+        .TWO_STAGE_SYNC(TWO_STAGE_SYNC)
+    ) wr_sync_inst (
+        .clk(wr_clk),
+        .rstn(rstn),
+        .en(wr_en && !wr_full),
+        .bin_ptr_in(wr_ptr_bin),
+        .bin_ptr_out(wr_ptr_bin),
+        .other_gray_in(rd_ptr_gray),
+        .other_gray_sync_out(rd_ptr_gray_sync2)
+    );
+
+    always_ff @(posedge wr_clk) begin
+        if (wr_en) begin
+            if (!wr_full) begin
+                mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
+                wr_overflow <= 1'b0;
+            end else begin
+                wr_overflow <= 1'b1; // Write attempted to full FIFO
+            end
+        end else begin
+            wr_overflow <= 1'b0;
+        end
+    end
+
+    assign wr_ptr_gray = (wr_ptr_bin >> 1) ^ wr_ptr_bin;
+    assign wr_full     = (wr_ptr_gray == {~rd_ptr_gray_sync2[ADDR_WIDTH], rd_ptr_gray_sync2[ADDR_WIDTH-1:0]});
+
+    // ---------------------------
+    // Read domain
+    // ---------------------------
+    PointerSync #(
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .ASYNC_RESET(ASYNC_RESET),
+        .TWO_STAGE_SYNC(TWO_STAGE_SYNC)
+    ) rd_sync_inst (
+        .clk(rd_clk),
+        .rstn(rstn),
+        .en(rd_en && !rd_empty),
+        .bin_ptr_in(rd_ptr_bin),
+        .bin_ptr_out(rd_ptr_bin),
+        .other_gray_in(wr_ptr_gray),
+        .other_gray_sync_out(wr_ptr_gray_sync2)
+    );
+
+    assign rd_ptr_gray = (rd_ptr_bin >> 1) ^ rd_ptr_bin;
+    assign rd_data     = mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
+    assign rd_empty    = (rd_ptr_gray == wr_ptr_gray_sync2);
+
+    always_ff @(posedge rd_clk) begin
+        if (rd_en) begin
+            if (rd_empty)
+                rd_underflow <= 1'b1; // Read attempted on empty FIFO
+            else
+                rd_underflow <= 1'b0;
+        end else begin
+            rd_underflow <= 1'b0;
+        end
+    end
+
+    // ---------------------------
+    // FIFO level calculation (safe CDC)
+    // ---------------------------
+    GrayToBin #(.ADDR_WIDTH(ADDR_WIDTH)) gray2bin_inst (
+        .gray(rd_ptr_gray_sync2),
+        .bin(rd_ptr_bin_from_gray_sync)
+    );
+
     assign level = wr_ptr_bin - rd_ptr_bin_from_gray_sync;
 
 endmodule
