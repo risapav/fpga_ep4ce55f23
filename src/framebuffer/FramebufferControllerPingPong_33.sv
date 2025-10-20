@@ -483,18 +483,60 @@ module SdramController #(
     logic rd_fifo_wr_en, rd_fifo_rd_en;
     logic [DATA_WIDTH-1:0] wr_fifo_rd_data;
 
-    CountdownTimer #(.COUNT_WIDTH($clog2(tRP+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
-      trp_timer_inst (.clk(clk),.rstn(rstn),.load(load_trp),.load_val(tRP),.done(trp_done));
-    CountdownTimer #(.COUNT_WIDTH($clog2(tRCD+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
-      trcd_timer_inst(.clk(clk),.rstn(rstn),.load(load_trcd),.load_val(tRCD),.done(trcd_done));
-    CountdownTimer #(.COUNT_WIDTH($clog2(tWR+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
-      twr_timer_inst (.clk(clk),.rstn(rstn),.load(load_twr),.load_val(tWR),.done(twr_done));
-    CountdownTimer #(.COUNT_WIDTH($clog2(tRFC+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
-      trfc_timer_inst(.clk(clk),.rstn(rstn),.load(load_trfc),.load_val(tRFC),.done(trfc_done));
-    CountdownTimer #(.COUNT_WIDTH($clog2(tMRD+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
-      trmrd_timer_inst(.clk(clk),.rstn(rstn),.load(load_trmrd),.load_val(tMRD),.done(trmrd_done));
-    CountdownTimer #(.COUNT_WIDTH($clog2(INIT_WAIT_CYCLES+1)),.ASYNC_RESET(0),.DONE_REGISTERED(0))
-      init_timer_inst(.clk(clk),.rstn(rstn),.load(load_init),.load_val(INIT_WAIT_CYCLES),.done(init_done));
+    CountdownTimer #(
+      .COUNT_WIDTH($clog2(tRP+1)),
+      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      ) trp_timer_inst (
+        .clk(clk),.rstn(rstn),
+        .load(load_trp),
+        .load_val(tRP),
+        .done(trp_done)
+      );
+    CountdownTimer #(
+      .COUNT_WIDTH($clog2(tRCD+1)),
+      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      ) trcd_timer_inst(
+        .clk(clk),.rstn(rstn),
+        .load(load_trcd),
+        .load_val(tRCD),
+        .done(trcd_done)
+      );
+    CountdownTimer #(
+      .COUNT_WIDTH($clog2(tWR+1)),
+      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      ) twr_timer_inst (
+        .clk(clk),.rstn(rstn),
+        .load(load_twr),
+        .load_val(tWR),
+        .done(twr_done)
+      );
+    CountdownTimer #(
+      .COUNT_WIDTH($clog2(tRFC+1)),
+      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      ) trfc_timer_inst(
+        .clk(clk),.rstn(rstn),
+        .load(load_trfc),
+        .load_val(tRFC),
+        .done(trfc_done)
+      );
+    CountdownTimer #(
+      .COUNT_WIDTH($clog2(tMRD+1)),
+      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      ) trmrd_timer_inst(
+        .clk(clk),.rstn(rstn),
+        .load(load_trmrd),
+        .load_val(tMRD),
+        .done(trmrd_done)
+      );
+    CountdownTimer #(
+      .COUNT_WIDTH($clog2(INIT_WAIT_CYCLES+1)),
+      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      ) init_timer_inst(
+        .clk(clk),.rstn(rstn),
+        .load(load_init),
+        .load_val(INIT_WAIT_CYCLES),
+        .done(init_done)
+      );
 
     AsyncFifoGeneric #(
       .DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH),
