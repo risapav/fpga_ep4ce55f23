@@ -150,8 +150,10 @@ module AsyncFifoGeneric #(
 endmodule
 
 // ============================================================================
-// SDRAM Controller
-// ============================================================================
+// >>> FSM #1 (Moore) – SDRAM Controller
+// Typ: Moore
+// Účel: Riadi inicializáciu, refresh, banky a generuje príkazy SDRAM.
+// =====================================================================
 module SdramController #(
     parameter int tRP   = 3,
     parameter int tRCD  = 3,
@@ -182,9 +184,18 @@ module SdramController #(
     localparam int AP_BIT_INDEX = 10;
     localparam logic [ROW_ADDR_WIDTH-1:0] mrs_value_addr = {1'b0, 1'b0, 2'b00, (CAS_LATENCY==3 ? 3'b011:3'b010), 1'b0, (BURST_LEN==8 ? 3'b011:3'b000)};
     localparam int NUM_BANKS = 1 << BANK_ADDR_WIDTH;
-    typedef enum logic [4:0] {INIT_WAIT, INIT_PRECHARGE, INIT_REFRESH1, INIT_REFRESH2, INIT_MRS, INIT_MRS_WAIT, IDLE, EVAL_BANK, EVAL_PRECHARGE, EVAL_TIMING, ACTIVATE_CMD, READ_CMD, WRITE_CMD, PRECHARGE_CMD, REFRESH_CMD, READ_BURST, WRITE_BURST} state_t;
+
+    typedef enum logic [4:0] {
+      INIT_WAIT, INIT_PRECHARGE, INIT_REFRESH1,
+      INIT_REFRESH2, INIT_MRS, INIT_MRS_WAIT,
+      IDLE, EVAL_BANK, EVAL_PRECHARGE, EVAL_TIMING,
+      ACTIVATE_CMD, READ_CMD, WRITE_CMD, PRECHARGE_CMD, REFRESH_CMD,
+      READ_BURST, WRITE_BURST
+      } state_t;
+
     typedef enum { NOP, ACTIVE, READ, WRITE, PRECHARGE, REFRESH, MRS } cmd_type_e;
     typedef struct packed { logic cs, ras, cas, we; } sdram_cmd_pins_t;
+
     function automatic sdram_cmd_pins_t get_sdram_cmd(cmd_type_e cmd_type);
         case(cmd_type)
             ACTIVE:    return '{cs:0, ras:0, cas:1, we:1};
@@ -196,7 +207,9 @@ module SdramController #(
             default:   return '{cs:1, ras:1, cas:1, we:1};
         endcase
     endfunction
+
     state_t state_reg, state_next;
+
     typedef enum logic { BANK_IDLE, BANK_ACTIVE } bank_state_t;
     bank_state_t bank_state[NUM_BANKS-1:0], bank_state_next[NUM_BANKS-1:0];
     logic [ROW_ADDR_WIDTH-1:0] active_row[NUM_BANKS-1:0], active_row_next[NUM_BANKS-1:0];
@@ -226,6 +239,8 @@ module SdramController #(
     CountdownTimer #($clog2(INIT_WAIT_CYCLES+1)) init_timer_inst(.clk(clk),.rstn(rstn),.load(load_init),.load_val(INIT_WAIT_CYCLES),.done(init_done));
     AsyncFifoGeneric #(.DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH)) write_fifo_inst(.rstn(rstn),.wr_clk(clk),.wr_en(wr_fifo_wr_en),.wr_data(wdata),.wr_full(wr_fifo_full),.rd_clk(clk),.rd_en(wr_fifo_rd_en),.rd_data(wr_fifo_rd_data),.rd_empty(wr_fifo_empty),.level(wdata_level));
     AsyncFifoGeneric #(.DATA_WIDTH(DATA_WIDTH),.ADDR_WIDTH(FIFO_ADDR_WIDTH)) read_fifo_inst(.rstn(rstn),.wr_clk(clk),.wr_en(rd_fifo_wr_en),.wr_data(sdram_dq),.wr_full(rd_fifo_full),.rd_clk(clk),.rd_en(rd_fifo_rd_en),.rd_data(rdata),.rd_empty(rd_fifo_empty),.level(rdata_level));
+
+    // --- hlavná Moore FSM logika ---
     always_comb begin
         fsm_ready_for_cmd = (state_reg == IDLE) && !refresh_pending && twr_done;
         selected_cmd_valid = 1'b0;
@@ -242,6 +257,7 @@ module SdramController #(
             if (fsm_ready_for_cmd) wr_cmd_ready = 1'b1;
         end
     end
+
     always_ff @(posedge clk) begin
         if (!rstn) begin
             state_reg <= INIT_WAIT;
@@ -273,6 +289,7 @@ module SdramController #(
             if (wr_fifo_rd_en) write_data_reg <= wr_fifo_rd_data;
         end
     end
+
     always_comb begin
         sdram_addr_t cmd_addr;
         sdram_cmd_pins_t cmd_pins;
@@ -335,7 +352,9 @@ module SdramController #(
 endmodule
 
 // ============================================================================
-// TOP Modul: Framebuffer Controller
+// >>> FSM #2 a #3 (Moore) – Ping-Pong Buffer A a B
+// Typ: Moore
+// Účel: Sledujú stav BUF_A a BUF_B pre ping-pong režim
 // ============================================================================
 module FramebufferController #(
     parameter int FRAME_WIDTH  = 800,
@@ -357,6 +376,7 @@ module FramebufferController #(
     localparam logic [ADDR_WIDTH_TOTAL-1:0] FRAME_B_BASE_ADDR = FRAME_SIZE_WORDS;
     typedef enum logic {BUF_A, BUF_B} active_buf_t;
     typedef enum logic [1:0] {EMPTY, FILLING, FULL, READING} buffer_state_t;
+
     buffer_state_t buf_a_state, buf_b_state;
     active_buf_t   write_buf, read_buf;
     logic          swap_buffers_req;
@@ -382,6 +402,8 @@ module FramebufferController #(
         .sdram_cas_n(sdram_cas_n),.sdram_we_n(sdram_we_n),.sdram_dq(sdram_dq),.sdram_dqm(sdram_dqm),
         .sdram_cke(sdram_cke),.sdram_clk(sdram_clk)
     );
+
+
     always_ff @(posedge clk) begin
         if (!rstn) begin
             buf_a_state <= EMPTY; buf_b_state <= EMPTY; write_buf <= BUF_A; read_buf <= BUF_B; first_frame_done <= 1'b0;
@@ -403,6 +425,7 @@ module FramebufferController #(
             endcase
         end
     end
+
     assign swap_buffers_req = (write_buf == BUF_A ? (buf_a_state == FULL) : (buf_b_state == FULL)) && (read_buf == BUF_A ? (buf_a_state == EMPTY) : (buf_b_state == EMPTY));
 
     // --- Write Command Generator ---
@@ -457,7 +480,7 @@ module FramebufferController #(
         end
     end
 
-    // OPRAVA: Logika pre m_axis_last
+    // >>> FSM #4 (Moore) – m_axis_last generation
     always_ff @(posedge clk) begin
         if (!rstn) begin
             m_axis_x_cnt <= 'b0;

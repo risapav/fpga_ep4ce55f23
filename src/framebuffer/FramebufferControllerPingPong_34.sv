@@ -1,12 +1,16 @@
 // =============================================================================
 // Súbor: FramebufferWithSdramController_Final.sv
-// Verzia: 3.3 (Oprava synchronizácie obrazu)
-// Dátum: 17. október 2025
+// Verzia: 3.4 (Oprava CDC v AsyncFIFO a oprava syntaxe genvar)
+// Dátum: 20. október 2025
 //
 // Popis:
 // Kompletný, finálny návrh ping-pong framebuffer kontroléra s integrovaným
 // SDRAM radičom. Tento súbor obsahuje všetky potrebné moduly a zahŕňa
 // všetky opravy a vylepšenia z predchádzajúcich iterácií.
+//
+// Zmeny vo verzii 3.4:
+// - OPRAVA SYNTAXE: Korekcia `genvar` v `AsyncFifoGeneric` (Error 10170).
+// - OPRAVA CDC: Výpočet `level` v `AsyncFifoGeneric` je teraz bezpečný.
 //
 // Zmeny vo verzii 3.3:
 // - OPRAVA ROZHÁDZANÉHO OBRAZU: Pôvodná logika pre generovanie `m_axis_last`
@@ -152,7 +156,8 @@ module AsyncFifoGeneric #(
     logic [ADDR_WIDTH:0] wr_ptr_gray, rd_ptr_gray;
     logic [ADDR_WIDTH:0] wr_ptr_gray_sync1, wr_ptr_gray_sync2;
     logic [ADDR_WIDTH:0] rd_ptr_gray_sync1, rd_ptr_gray_sync2;
-    logic [ADDR_WIDTH:0] rd_ptr_bin_synced;
+    // REFAKTORING: Pridaný signál pre bezpečne konvertovaný binárny ukazovateľ
+    logic [ADDR_WIDTH:0] rd_ptr_bin_from_gray_sync;
 
     // ---------------------------
     // WRITE DOMAIN
@@ -241,26 +246,22 @@ module AsyncFifoGeneric #(
     assign rd_data = mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
     assign rd_empty = (rd_ptr_gray == wr_ptr_gray_sync2);
 
-    // Synchronizácia level
+    // REFAKTORING: Synchronizácia level (Oprava chyby CDC)
+    // Prevod synchronizovaného Gray kódu (z rd_clk) späť na binárny v wr_clk doméne
     generate
-        if (ASYNC_RESET) begin : g_level_async
-            always_ff @(posedge wr_clk or negedge rstn) begin
-                if (!rstn)
-                    rd_ptr_bin_synced <= '0;
-                else
-                    rd_ptr_bin_synced <= rd_ptr_bin;
-            end
-        end else begin : g_level_sync
-            always_ff @(posedge wr_clk) begin
-                if (!rstn)
-                    rd_ptr_bin_synced <= '0;
-                else
-                    rd_ptr_bin_synced <= rd_ptr_bin;
-            end
+        // MSB sa nemení
+        assign rd_ptr_bin_from_gray_sync[ADDR_WIDTH] = rd_ptr_gray_sync2[ADDR_WIDTH];
+
+        // Ostatné bity sú XOR predchádzajúceho binárneho bitu a aktuálneho Gray bitu
+        genvar i; // <-- OPRAVA: Deklarácia `genvar` musí byť mimo 'for' cyklu
+        for (i = ADDR_WIDTH - 1; i >= 0; i--) begin : g_gray_to_bin_conv
+            assign rd_ptr_bin_from_gray_sync[i] = rd_ptr_bin_from_gray_sync[i+1] ^ rd_ptr_gray_sync2[i];
         end
     endgenerate
 
-    assign level = wr_ptr_bin - rd_ptr_bin_synced;
+    // Výpočet zaplnenia FIFO (level) je teraz bezpečný voči CDC
+    assign level = wr_ptr_bin - rd_ptr_bin_from_gray_sync;
+
 endmodule
 
 // ============================================================================
@@ -742,22 +743,22 @@ module FramebufferController #(
     end
 
     always_ff @(posedge clk) begin
-        if (!rstn) write_addr_cnt <= 'b0;
-        else if (swap_buffers_req) write_addr_cnt <= 'b0;
+        if (!rstn) write_addr_cnt <= '0;
+        else if (swap_buffers_req) write_addr_cnt <= '0;
         else if (s_axis_valid && s_axis_ready) begin
-            if (write_addr_cnt == FRAME_SIZE_WORDS - 1) write_addr_cnt <= 'b0;
+            if (write_addr_cnt == FRAME_SIZE_WORDS - 1) write_addr_cnt <= '0;
             else write_addr_cnt <= write_addr_cnt + 1;
         end
     end
 
     always_ff @(posedge clk) begin
         if (!rstn)
-            wr_cmd_addr_cnt <= 'b0;
+            wr_cmd_addr_cnt <= '0;
         else if (swap_buffers_req)
-            wr_cmd_addr_cnt <= 'b0;
+            wr_cmd_addr_cnt <= '0;
         else if (wr_cmd_valid && wr_cmd_ready) begin
             if (wr_cmd_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
-                wr_cmd_addr_cnt <= 'b0;
+                wr_cmd_addr_cnt <= '0;
             else
                 wr_cmd_addr_cnt <= wr_cmd_addr_cnt + BURST_LEN;
         end
@@ -777,10 +778,10 @@ module FramebufferController #(
     end
 
     always_ff @(posedge clk) begin
-        if (!rstn) read_addr_cnt <= 'b0;
-        else if (swap_buffers_req) read_addr_cnt <= 'b0;
+        if (!rstn) read_addr_cnt <= '0;
+        else if (swap_buffers_req) read_addr_cnt <= '0;
         else if (rd_cmd_valid && rd_cmd_ready) begin
-            if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN) read_addr_cnt <= 'b0;
+            if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN) read_addr_cnt <= '0;
             else read_addr_cnt <= read_addr_cnt + BURST_LEN;
         end
     end
@@ -788,10 +789,10 @@ module FramebufferController #(
     // OPRAVA: Logika pre m_axis_last
     always_ff @(posedge clk) begin
         if (!rstn) begin
-            m_axis_x_cnt <= 'b0;
+            m_axis_x_cnt <= '0;
         end else if (m_axis_valid && m_axis_ready) begin
             if (m_axis_x_cnt == FRAME_WIDTH - 1) begin
-                m_axis_x_cnt <= 'b0;
+                m_axis_x_cnt <= '0;
             end else begin
                 m_axis_x_cnt <= m_axis_x_cnt + 1;
             end
@@ -817,4 +818,3 @@ module FramebufferController #(
 endmodule
 
 `endif // FRAMEBUFFER_PINGPONG_SDRAM_FINAL_SV
-
