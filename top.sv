@@ -106,16 +106,27 @@ module top (
                 .m_axis(gen_to_fb_if)
                 );
 
-            framebuffer_ctrl #(
-              .C_OP_MODE(NORMAL),
-              .H_RES(H_RES),
-              .V_RES(V_RES)
+            FramebufferController #(
+              .FRAME_WIDTH(H_RES),
+              .FRAME_HEIGHT(V_RES)
               ) u_framebuffer (
-                .clk_i(clk_2),
-                .clk_sh_i(clk_3),
-                .rst_ni(rstn_sync_2),
-                .s_axis_video_in(gen_to_fb_if),
-                .m_axis_video_out(fb_to_vga_if),
+                .clk(clk_2),
+                .clk_sh(clk_3),
+                .rstn(rstn_sync_2),
+
+                // -- AXI-Stream vstup (napr. z kamery)
+                .s_axis_valid(gen_to_fb_if.TVALID),
+                .s_axis_ready(gen_to_fb_if.TREADY),
+                .s_axis_data(gen_to_fb_if.TDATA),
+                .s_axis_last(gen_to_fb_if.TLAST), // Koniec riadku
+
+                // -- AXI-Stream výstup (napr. pre displej)
+                .m_axis_valid(fb_to_vga_if.TVALID),
+                .m_axis_ready(fb_to_vga_if.TREADY),
+                .m_axis_data(fb_to_vga_if.TDATA),
+                .m_axis_last(fb_to_vga_if.TLAST),
+
+                // -- SDRAM rozhranie
                 .sdram_dq(SDRAM_DQ),
                 .sdram_addr(SDRAM_ADDR),
                 .sdram_ba(SDRAM_BA),
@@ -126,6 +137,7 @@ module top (
                 .sdram_we_n(SDRAM_WE_N),
                 .sdram_ras_n(SDRAM_RAS_N),
                 .sdram_dqm({SDRAM_UDQM, SDRAM_LDQM}),
+    // -- Diagnostika
                 .debug_led_0_o(LED_J10),
                 .debug_led_1_o(LED_J11)
             );

@@ -1,16 +1,13 @@
 // =============================================================================
 // Súbor: sdram_controller_final_v13_1.sv
-// Verzia: 13.1 - Refactored with Modular FIFO (fixes for Quartus/Vivado)
-// Dátum: 16. október 2025
+// Verzia: 13.1 (verzia B - všetko v jednom súbore)
+// Dátum: 17. október 2025
 //
-// Poznámky:
-// - Pridané NUM_BANKS localparam
-// - Stabilizované sdram_cke
-// - Pridaný tMRD (MRS delay) a príslušný CountdownTimer
-// - Samostatné FIFO pre DQM (rovnaká hĺbka ako data FIFO)
-// - AsyncFifoGeneric obsahuje (* ramstyle = "M20K" *) pre Quartus
-// - resp_valid / resp_last logika upravená
-// - drobné čistenie signálov a init sekvencie
+// Popis:
+// Kompletný SDRAM kontrolér (single-file) s balíčkom typov/parametrov,
+// countdown timerom a generickou dual-clock FIFO.
+// Implementuje init / activate / read / write / precharge / refresh FSM,
+// podporu FIFO pre write/read path a základné debug výstupy.
 // =============================================================================
 
 `ifndef SDRAM_CTRL_V13_1_SV
@@ -19,10 +16,10 @@
 (* default_nettype = "none" *)
 
 // -----------------------------------------------------------------------------
-// Balíček so zdieľanými typmi a parametrami
+// 1) BALÍČEK so zdieľanými typmi a parametrami
 // -----------------------------------------------------------------------------
 package sdram_pkg;
-    // Základné parametre SDRAM (možno prispôsobené modulom)
+    // Základné parametre (možno predefinovať pri importovaní)
     parameter int DATA_WIDTH      = 16;
     parameter int ROW_ADDR_WIDTH  = 13;
     parameter int COL_ADDR_WIDTH  = 9;
@@ -30,14 +27,14 @@ package sdram_pkg;
     parameter int BURST_LEN       = 8;
     parameter int CAS_LATENCY     = 3;
 
-    // Štruktúra pre adresu rozdelenú na časti
+    // Typ rozdelenej adresy (bank,row,col)
     typedef struct packed {
         logic [BANK_ADDR_WIDTH-1:0] bank;
         logic [ROW_ADDR_WIDTH-1:0]  row;
         logic [COL_ADDR_WIDTH-1:0]  col;
     } sdram_addr_t;
 
-    // Štruktúra pre príkaz kontroléru
+    // Príkaz pre kontrolér
     typedef struct packed {
         sdram_addr_t addr;
         logic        rw; // 1 = write, 0 = read
@@ -48,7 +45,7 @@ endpackage : sdram_pkg
 import sdram_pkg::*;
 
 // -----------------------------------------------------------------------------
-// Countdown Timer Modul
+// 2) Countdown Timer Modul
 // -----------------------------------------------------------------------------
 module CountdownTimer #(
     parameter int COUNT_WIDTH = 4
@@ -81,7 +78,7 @@ module CountdownTimer #(
 endmodule
 
 // -----------------------------------------------------------------------------
-// Async FIFO Generic (dual-clock, Gray coded pointers)
+// 3) Async FIFO Generic (dual-clock, Gray-coded pointers)
 // -----------------------------------------------------------------------------
 module AsyncFifoGeneric #(
     parameter int DATA_WIDTH = 16,
@@ -131,7 +128,7 @@ module AsyncFifoGeneric #(
 
     always_ff @(posedge wr_clk) begin
         if (!rstn) begin
-            // nothing to write
+            // nothing
         end else if (wr_en && !wr_full) begin
             mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
         end
@@ -160,8 +157,9 @@ module AsyncFifoGeneric #(
 
 endmodule : AsyncFifoGeneric
 
+
 // -----------------------------------------------------------------------------
-// Hlavný SDRAM Kontrolér - verzia 13.1
+// 4) Hlavný SDRAM Kontrolér - verzia 13.1 (plná implementácia)
 // -----------------------------------------------------------------------------
 module SdramControllerFinal #(
     parameter int CLOCK_FREQ_HZ      = 100_000_000,
