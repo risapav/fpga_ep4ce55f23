@@ -18,7 +18,7 @@
 `ifndef FRAMEBUFFER_PINGPONG_SDRAM_FINAL_SV
 `define FRAMEBUFFER_PINGPONG_SDRAM_FINAL_SV
 
-(* default_nettype = "none" *)
+`default_nettype none
 
 // ============================================================================
 // Balíček SDRAM: Zdieľané typy a parametre
@@ -92,7 +92,7 @@ module CountdownTimer #(
         if (load)
             count_next = load_val;
         else if (count_reg > '0)
-            count_next = count_reg - 1;
+            count_next = count_reg - $bits(count_next)'(1);
         else
             count_next = count_reg;
 
@@ -150,7 +150,7 @@ module PointerSync #(
                     other_gray_sync_out <= '0;
                 end else begin
                     if (en)
-                      bin_ptr_out <= bin_ptr_out + 1;
+                      bin_ptr_out <= bin_ptr_out + $bits(bin_ptr_out)'(1);
 
                     other_gray_sync1 <= other_gray_in;
                     if (TWO_STAGE_SYNC)
@@ -167,7 +167,7 @@ module PointerSync #(
                     other_gray_sync_out <= '0;
                 end else begin
                     if (en)
-                      bin_ptr_out <= bin_ptr_out + 1;
+                      bin_ptr_out <= bin_ptr_out + $bits(bin_ptr_out)'(1);
 
                     other_gray_sync1 <= other_gray_in;
                     if (TWO_STAGE_SYNC)
@@ -371,7 +371,7 @@ module SdramController #(
     parameter int tRP   = 3,  //Precharge to Active Command Period
     parameter int tRCD  = 3,  //Active to Read/Write Command Delay Time
     parameter int tWR   = 2,  //Write Recovery Time
-    parameter int tRFC  = 7,  
+    parameter int tRFC  = 7,
     parameter int tRAS  = 7,  //Active to precharge Command Period
     parameter int tMRD  = 2,  // mode register set delay
     parameter int CLOCK_FREQ_HZ   = 100_000_000,
@@ -429,9 +429,9 @@ module SdramController #(
       } state_t;
 
     typedef enum { NOP, ACTIVE, READ, WRITE, PRECHARGE, REFRESH, MRS } cmd_type_e;
-    
-    typedef struct packed { 
-      logic cs, ras, cas, we; 
+
+    typedef struct packed {
+      logic cs, ras, cas, we;
     } sdram_cmd_pins_t;
 
     function automatic sdram_cmd_pins_t get_sdram_cmd(cmd_type_e cmd_type);
@@ -450,17 +450,17 @@ module SdramController #(
     state_t state_reg, state_next;
 
     typedef enum logic {
-      BANK_IDLE, BANK_ACTIVE 
+      BANK_IDLE, BANK_ACTIVE
     } bank_state_t;
-    
+
     bank_state_t bank_state[NUM_BANKS], bank_state_next[NUM_BANKS];
     logic [ROW_ADDR_WIDTH-1:0] active_row[NUM_BANKS], active_row_next[NUM_BANKS];
     logic [$clog2(tRAS+1)-1:0] tras_timer[NUM_BANKS], tras_timer_next[NUM_BANKS];
-    
+
     // Timers control signals and dones
     logic load_trp, load_trcd, load_twr, load_trfc, load_init, load_trmrd;
     logic trp_done, trcd_done, twr_done, trfc_done, init_done, trmrd_done;
-    
+
     logic [$clog2(REFRESH_INTERVAL+1)-1:0] refresh_counter, refresh_counter_next;
     logic refresh_pending, refresh_pending_next;
     logic [$clog2(BURST_LEN):0] burst_cnt, burst_cnt_next;
@@ -471,18 +471,18 @@ module SdramController #(
     logic fsm_ready_for_cmd;
     sdram_cmd_t selected_cmd;
     logic selected_cmd_valid;
-    
+
     // FIFO interface signals
     logic wr_fifo_full, wr_fifo_empty;
     logic rd_fifo_full, rd_fifo_empty;
     logic wr_fifo_wr_en, wr_fifo_rd_en;
     logic rd_fifo_wr_en, rd_fifo_rd_en;
     logic [DATA_WIDTH-1:0] wr_fifo_rd_data;
-    
+
     // CountdownTimer instances
     CountdownTimer #( //Precharge to Active Command
       .COUNT_WIDTH($clog2(tRP+1)),
-      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      .ASYNC_RESET(0),.DONE_REGISTERED(1)
       ) trp_timer_inst (
         .clk(clk),.rstn(rstn),
         .load(load_trp),
@@ -491,7 +491,7 @@ module SdramController #(
       );
     CountdownTimer #( //Active to Read/Write Command Delay
       .COUNT_WIDTH($clog2(tRCD+1)),
-      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      .ASYNC_RESET(0),.DONE_REGISTERED(1)
       ) trcd_timer_inst(
         .clk(clk),.rstn(rstn),
         .load(load_trcd),
@@ -500,7 +500,7 @@ module SdramController #(
       );
     CountdownTimer #( // Write Recovery
       .COUNT_WIDTH($clog2(tWR+1)),
-      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      .ASYNC_RESET(0),.DONE_REGISTERED(1)
       ) twr_timer_inst (
         .clk(clk),.rstn(rstn),
         .load(load_twr),
@@ -509,7 +509,7 @@ module SdramController #(
       );
     CountdownTimer #(
       .COUNT_WIDTH($clog2(tRFC+1)),
-      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      .ASYNC_RESET(0),.DONE_REGISTERED(1)
       ) trfc_timer_inst(
         .clk(clk),.rstn(rstn),
         .load(load_trfc),
@@ -518,7 +518,7 @@ module SdramController #(
       );
     CountdownTimer #(
       .COUNT_WIDTH($clog2(tMRD+1)),
-      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      .ASYNC_RESET(0),.DONE_REGISTERED(1)
       ) trmrd_timer_inst(
         .clk(clk),.rstn(rstn),
         .load(load_trmrd),
@@ -527,7 +527,7 @@ module SdramController #(
       );
     CountdownTimer #( // Init Timer
       .COUNT_WIDTH($clog2(INIT_WAIT_CYCLES+1)),
-      .ASYNC_RESET(0),.DONE_REGISTERED(0)
+      .ASYNC_RESET(0),.DONE_REGISTERED(1)
       ) init_timer_inst(
         .clk(clk),.rstn(rstn),
         .load(load_init),
@@ -584,11 +584,11 @@ module SdramController #(
     always_ff @(posedge clk) begin
         if (!rstn) begin
             state_reg <= INIT_WAIT;
-            refresh_counter <= REFRESH_INTERVAL;
-            refresh_pending <= 1'b0;
-            cas_cnt <= 'b0;
-            burst_cnt <= 'b0;
-            current_cmd <= '{default:'0};
+            refresh_counter <= $bits(refresh_counter)'(REFRESH_INTERVAL);
+            refresh_pending <= '0;
+            cas_cnt <= '0;
+            burst_cnt <= '0;
+            current_cmd <= '0;
             dq_write_enable_d <= 1'b0;
             write_data_reg <= 'b0;
             for (int i=0; i<NUM_BANKS; i++) begin
@@ -602,18 +602,18 @@ module SdramController #(
             cas_cnt <= cas_cnt_next;
             refresh_counter <= refresh_counter_next;
             refresh_pending <= refresh_pending_next;
-            
-            if (fsm_ready_for_cmd && selected_cmd_valid) 
+
+            if (fsm_ready_for_cmd && selected_cmd_valid)
                 current_cmd <= selected_cmd;
-              
+
             for (int i=0; i<NUM_BANKS; i++) begin
                 bank_state[i] <= bank_state_next[i];
                 active_row[i] <= active_row_next[i];
                 tras_timer[i] <= tras_timer_next[i];
             end
-            
+
             dq_write_enable_d <= dq_write_enable;
-            if (wr_fifo_rd_en) 
+            if (wr_fifo_rd_en)
                 write_data_reg <= wr_fifo_rd_data;
         end
     end
@@ -622,7 +622,7 @@ module SdramController #(
     always_comb begin
         sdram_addr_t cmd_addr;
         sdram_cmd_pins_t cmd_pins;
-        
+
         // defaults
         state_next = state_reg;
         refresh_counter_next = refresh_counter;
@@ -634,194 +634,201 @@ module SdramController #(
             active_row_next[i] = active_row[i];
             tras_timer_next[i] = tras_timer[i];
         end
-        
+
         cmd_addr = current_cmd.addr;
         cmd_pins = get_sdram_cmd(NOP);
-        
+
         dq_write_enable = 1'b0;
         sdram_addr = 'b0;
         sdram_ba = 'b0;
         sdram_cke = 1'b1;
-        
+
         // default timers loads
-        load_trp = 1'b0; 
-        load_trcd = 1'b0; 
-        load_twr = 1'b0; 
-        load_trfc = 1'b0; 
-        load_init = 1'b0; 
+        load_trp = 1'b0;
+        load_trcd = 1'b0;
+        load_twr = 1'b0;
+        load_trfc = 1'b0;
+        load_init = 1'b0;
         load_trmrd = 1'b0;
-        
+
         // decrement tras timers locally
         for (int i=0; i<NUM_BANKS; i++)
-            if (tras_timer[i] > 0) tras_timer_next[i] = tras_timer[i] - 1;
-            
-        if (cas_cnt > 0) cas_cnt_next = cas_cnt - 1;
-        
+            if (tras_timer[i] > 0)
+                tras_timer_next[i] = tras_timer[i] - $bits(tras_timer_next[i] )'(1);
+
+        if (cas_cnt > 0)
+            cas_cnt_next = cas_cnt - $bits(cas_cnt_next)'(1);
+
         // refresh counter
-        if (state_reg != REFRESH_CMD && refresh_counter > 0) 
-            refresh_counter_next = refresh_counter - 1;
-        else if (state_reg != REFRESH_CMD && refresh_counter == 0) 
+        if (state_reg != REFRESH_CMD && refresh_counter > 0)
+            refresh_counter_next = refresh_counter - $bits(refresh_counter_next)'(1);
+        else if (state_reg != REFRESH_CMD && refresh_counter == 0)
             refresh_pending_next = 1'b1;
-        
+
         // FIFO control signals
         wr_fifo_wr_en = wdata_valid && !wr_fifo_full;
         wr_fifo_rd_en = (state_reg == WRITE_BURST) && !wr_fifo_empty;
-        
+
         rd_fifo_wr_en = (state_reg == READ_BURST) && (cas_cnt == 1) && !rd_fifo_full;
         rd_fifo_rd_en = rdata_ready && !rd_fifo_empty;
-        
+
         // determine command pins and FSM transitions
         case (state_reg)
-            INIT_WAIT: begin 
-                load_init = 1'b1; 
-                sdram_cke = 1'b0; 
-                if (init_done) 
-                    state_next = INIT_PRECHARGE; 
+            INIT_WAIT: begin
+                load_init = 1'b1;
+                sdram_cke = 1'b0;
+                if (init_done)
+                    state_next = INIT_PRECHARGE;
             end
-            
-            INIT_PRECHARGE: begin 
-                cmd_pins = get_sdram_cmd(PRECHARGE); 
-                sdram_addr[AP_BIT_INDEX] = 1'b1; 
-                load_trp = 1'b1; 
-                state_next = INIT_REFRESH1; 
+
+            INIT_PRECHARGE: begin
+                cmd_pins = get_sdram_cmd(PRECHARGE);
+                sdram_addr[AP_BIT_INDEX] = 1'b1;
+                load_trp = 1'b1;
+                state_next = INIT_REFRESH1;
             end
-            
-            INIT_REFRESH1: if (trp_done) begin 
-                cmd_pins = get_sdram_cmd(REFRESH); 
-                load_trfc = 1'b1; 
-                state_next = INIT_REFRESH2; 
+
+            INIT_REFRESH1: if (trp_done) begin
+                cmd_pins = get_sdram_cmd(REFRESH);
+                load_trfc = 1'b1;
+                state_next = INIT_REFRESH2;
             end
-            
-            INIT_REFRESH2: if (trfc_done) begin 
-                cmd_pins = get_sdram_cmd(REFRESH); 
-                load_trfc = 1'b1; 
-                state_next = INIT_MRS; 
+
+            INIT_REFRESH2: if (trfc_done) begin
+                cmd_pins = get_sdram_cmd(REFRESH);
+                load_trfc = 1'b1;
+                state_next = INIT_MRS;
             end
-            
-            INIT_MRS: if (trfc_done) begin 
-                cmd_pins = get_sdram_cmd(MRS); 
-                sdram_addr = mrs_value_addr; 
+
+            INIT_MRS: if (trfc_done) begin
+                cmd_pins = get_sdram_cmd(MRS);
+                sdram_addr = mrs_value_addr;
                 // require tMRD after MRS
-                load_trmrd = 1'b1; 
-                state_next = INIT_MRS_WAIT; 
+                load_trmrd = 1'b1;
+                state_next = INIT_MRS_WAIT;
             end
-            
-            INIT_MRS_WAIT: if (trmrd_done) begin 
+
+            INIT_MRS_WAIT: if (trmrd_done) begin
                 state_next = IDLE;
             end
-            
-            IDLE: if (refresh_pending && twr_done) state_next = REFRESH_CMD; else if (fsm_ready_for_cmd && selected_cmd_valid) state_next = EVAL_BANK;
-            
+
+            IDLE: begin
+                if (refresh_pending && twr_done)
+                    state_next = REFRESH_CMD;
+                else if (fsm_ready_for_cmd && selected_cmd_valid)
+                    state_next = EVAL_BANK;
+            end
+
             EVAL_BANK: begin
-                if (bank_state[cmd_addr.bank] == BANK_IDLE) begin 
-                    if (trp_done) 
-                        state_next = ACTIVATE_CMD; 
-                end else begin 
-                    if (active_row[cmd_addr.bank] == cmd_addr.row) 
-                        state_next = EVAL_TIMING; 
-                    else 
-                        state_next = EVAL_PRECHARGE; 
+                if (bank_state[cmd_addr.bank] == BANK_IDLE) begin
+                    if (trp_done)
+                        state_next = ACTIVATE_CMD;
+                end else begin
+                    if (active_row[cmd_addr.bank] == cmd_addr.row)
+                        state_next = EVAL_TIMING;
+                    else
+                        state_next = EVAL_PRECHARGE;
                 end
             end
-            
+
             EVAL_PRECHARGE: if (tras_timer[cmd_addr.bank] == 0) begin
                 state_next = PRECHARGE_CMD;
             end
-            
+
             EVAL_TIMING: if (trcd_done) begin
-                if (current_cmd.rw == 1'b1) 
-                    state_next = WRITE_CMD; 
-                else 
+                if (current_cmd.rw == 1'b1)
+                    state_next = WRITE_CMD;
+                else
                     state_next = READ_CMD;
             end
-            
-            ACTIVATE_CMD: begin 
-                cmd_pins = get_sdram_cmd(ACTIVE); 
-                sdram_ba = cmd_addr.bank; 
-                sdram_addr = cmd_addr.row; 
-                load_trcd = 1'b1; 
-                tras_timer_next[cmd_addr.bank] = tRAS; 
-                bank_state_next[cmd_addr.bank] = BANK_ACTIVE; 
-                active_row_next[cmd_addr.bank] = cmd_addr.row; 
-                state_next = EVAL_BANK; 
+
+            ACTIVATE_CMD: begin
+                cmd_pins = get_sdram_cmd(ACTIVE);
+                sdram_ba = cmd_addr.bank;
+                sdram_addr = cmd_addr.row;
+                load_trcd = 1'b1;
+                tras_timer_next[cmd_addr.bank] = $bits(tras_timer_next[cmd_addr.bank])'(tRAS);
+                bank_state_next[cmd_addr.bank] = BANK_ACTIVE;
+                active_row_next[cmd_addr.bank] = cmd_addr.row;
+                state_next = EVAL_BANK;
             end
-            
-            READ_CMD: begin 
-                cmd_pins = get_sdram_cmd(READ); 
-                sdram_ba = cmd_addr.bank; 
-                sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_addr.col; 
-                sdram_addr[AP_BIT_INDEX] = current_cmd.auto_precharge; 
-                cas_cnt_next = CAS_LATENCY; 
-                burst_cnt_next = BURST_LEN; 
-                if (current_cmd.auto_precharge) begin 
-                    bank_state_next[cmd_addr.bank] = BANK_IDLE; 
-                    load_trp = 1'b1; 
-                end 
-                state_next = READ_BURST; 
+
+            READ_CMD: begin
+                cmd_pins = get_sdram_cmd(READ);
+                sdram_ba = cmd_addr.bank;
+                sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_addr.col;
+                sdram_addr[AP_BIT_INDEX] = current_cmd.auto_precharge;
+                cas_cnt_next = $bits(cas_cnt_next)'(CAS_LATENCY);
+                burst_cnt_next = $bits(burst_cnt_next)'(BURST_LEN);
+                if (current_cmd.auto_precharge) begin
+                    bank_state_next[cmd_addr.bank] = BANK_IDLE;
+                    load_trp = 1'b1;
+                end
+                state_next = READ_BURST;
             end
-            
-            WRITE_CMD: begin 
-                cmd_pins = get_sdram_cmd(WRITE); 
-                sdram_ba = cmd_addr.bank; 
-                sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_addr.col; 
-                sdram_addr[AP_BIT_INDEX] = current_cmd.auto_precharge; 
-                burst_cnt_next = BURST_LEN; 
-                if (current_cmd.auto_precharge) begin 
-                    bank_state_next[cmd_addr.bank] = BANK_IDLE; 
-                    load_twr = 1'b1; 
-                    load_trp = 1'b1; 
-                end 
-                state_next = WRITE_BURST; 
+
+            WRITE_CMD: begin
+                cmd_pins = get_sdram_cmd(WRITE);
+                sdram_ba = cmd_addr.bank;
+                sdram_addr[COL_ADDR_WIDTH-1:0] = cmd_addr.col;
+                sdram_addr[AP_BIT_INDEX] = current_cmd.auto_precharge;
+                burst_cnt_next = $bits(burst_cnt_next)'(BURST_LEN);
+                if (current_cmd.auto_precharge) begin
+                    bank_state_next[cmd_addr.bank] = BANK_IDLE;
+                    load_twr = 1'b1;
+                    load_trp = 1'b1;
+                end
+                state_next = WRITE_BURST;
             end
-            
-            READ_BURST: if (cas_cnt == 0) begin 
-                if (burst_cnt > 0) 
-                    burst_cnt_next = burst_cnt - 1; 
-                if (burst_cnt == 1) 
-                    state_next = IDLE; 
+
+            READ_BURST: if (cas_cnt == 0) begin
+                if (burst_cnt > 0)
+                    burst_cnt_next = burst_cnt - $bits(burst_cnt_next)'(1);
+                if (burst_cnt == 1)
+                    state_next = IDLE;
             end
-            
-            WRITE_BURST: begin 
-                dq_write_enable = 1'b1; 
-                burst_cnt_next = burst_cnt - 1; 
-                if (burst_cnt == 1) begin 
-                    load_twr = 1'b1; 
-                    state_next = IDLE; 
-                end 
+
+            WRITE_BURST: begin
+                dq_write_enable = 1'b1;
+                burst_cnt_next = burst_cnt - $bits(burst_cnt_next)'(1);
+                if (burst_cnt == 1) begin
+                    load_twr = 1'b1;
+                    state_next = IDLE;
+                end
             end
-            
-            PRECHARGE_CMD: begin 
-                cmd_pins = get_sdram_cmd(PRECHARGE); 
-                sdram_ba = cmd_addr.bank; 
-                load_trp = 1'b1; 
-                bank_state_next[cmd_addr.bank] = BANK_IDLE; 
-                state_next = EVAL_BANK; 
+
+            PRECHARGE_CMD: begin
+                cmd_pins = get_sdram_cmd(PRECHARGE);
+                sdram_ba = cmd_addr.bank;
+                load_trp = 1'b1;
+                bank_state_next[cmd_addr.bank] = BANK_IDLE;
+                state_next = EVAL_BANK;
             end
-            
-            REFRESH_CMD: begin 
-                cmd_pins = get_sdram_cmd(REFRESH); 
-                load_trfc = 1'b1; 
-                refresh_pending_next = 1'b0; 
-                refresh_counter_next = REFRESH_INTERVAL; 
-                state_next = IDLE; 
+
+            REFRESH_CMD: begin
+                cmd_pins = get_sdram_cmd(REFRESH);
+                load_trfc = 1'b1;
+                refresh_pending_next = 1'b0;
+                refresh_counter_next = $bits(refresh_counter_next)'(REFRESH_INTERVAL);
+                state_next = IDLE;
             end
-            
+
             default: state_next = IDLE;
         endcase
-        
+
         // Outputs / status
         wdata_ready = !wr_fifo_full;
         rdata_valid = !rd_fifo_empty;
-        
+
         // outputs to SDRAM pins
         sdram_cs_n  = cmd_pins.cs;
         sdram_ras_n = cmd_pins.ras;
         sdram_cas_n = cmd_pins.cas;
         sdram_we_n  = cmd_pins.we;
-        
-        sdram_dqm = (dq_write_enable_d && wr_fifo_empty) ? '1 : 'b0;
+
+        sdram_dqm = (dq_write_enable_d && wr_fifo_empty) ? $bits(sdram_dqm)'(1) : 'b0;
     end
-    
+
     // Drive SDRAM DQ and clock
     assign sdram_dq  = (dq_write_enable_d) ? write_data_reg : 'z;
     assign sdram_clk = clk_sh;
@@ -836,7 +843,7 @@ module FramebufferController #(
 
     // ZMEŇTE REŽIM PREPINANÍM HODNOTY TOHTO PARAMETRA
     parameter op_mode_e C_OP_MODE = NORMAL, //PASSTHROUGH, NORMAL
-    
+
     parameter int FRAME_WIDTH  = 800,
     parameter int FRAME_HEIGHT = 600
 )(
@@ -849,12 +856,14 @@ module FramebufferController #(
     output logic s_axis_ready,
     input  logic [DATA_WIDTH-1:0] s_axis_data,
     input  logic s_axis_last,
+    input  logic s_axis_user,
 
     // AXI Stream Master Interface (output frame data)
     output logic m_axis_valid,
     input  logic m_axis_ready,
     output logic [DATA_WIDTH-1:0] m_axis_data,
     output logic m_axis_last,
+    output logic m_axis_user,
 
     // SDRAM interface
     output logic [ROW_ADDR_WIDTH-1:0] sdram_addr,
@@ -880,11 +889,11 @@ generate
   // Jednoducho prepojí vstupný stream na výstupný.
   // ==============================================================
   if (C_OP_MODE == PASSTHROUGH) begin : gen_passthrough
-        assign m_axis_video_out.TVALID = s_axis_video_in.TVALID;
-        assign m_axis_video_out.TDATA  = s_axis_video_in.TDATA;
-        assign m_axis_video_out.TLAST  = s_axis_video_in.TLAST;
-        assign m_axis_video_out.TUSER  = s_axis_video_in.TUSER;
-        assign s_axis_video_in.TREADY  = m_axis_video_out.TREADY;
+        assign m_axis_valid = s_axis_valid;
+        assign m_axis_data  = s_axis_data;
+        assign m_axis_last  = s_axis_last;
+        assign m_axis_user  = s_axis_user;
+        assign s_axis_ready  = m_axis_ready;
 
         // Bezpečné zaparkovanie SDRAM pinov
         assign sdram_dq    = 16'bz;
@@ -899,21 +908,23 @@ generate
         assign sdram_dqm   = 2'b0;
 
         // Diagnostika pre tento režim
-        assign debug_led_o[0] = s_axis_video_in.TVALID;
-        assign debug_led_o[1] = s_axis_video_in.TREADY;
-        assign debug_led_o[2] = s_axis_video_in.TLAST;
-        assign debug_led_o[7:3] = 4'b0;
-        
-        assign debug_led_1[0] = m_axis_video_out.TVALID;
-        assign debug_led_1[1] = m_axis_video_out.TREADY;
-        assign debug_led_1[2] = m_axis_video_out.TLAST;
-        assign debug_led_1[7:3] = 4'b0;
+        assign debug_led_0_o[0] = s_axis_valid;
+        assign debug_led_0_o[1] = s_axis_ready;
+        assign debug_led_0_o[2] = s_axis_last;
+        assign debug_led_0_o[3] = s_axis_user;
+        assign debug_led_0_o[7:4] = 4'b0;
+
+        assign debug_led_1_o[0] = m_axis_valid;
+        assign debug_led_1_o[1] = m_axis_ready;
+        assign debug_led_1_o[2] = m_axis_last;
+        assign debug_led_1_o[3] = m_axis_user;
+        assign debug_led_1_o[7:4] = 4'b0;
   end
   // ==============================================================
   // OSTATNÉ REŽIMY (NORMAL, BRAM, DIAG_TEST)
   // Tieto režimy zdieľajú spoločnú štruktúru a signály.
   // ==============================================================
-  else begin : gen_framebuffer_active    
+  else begin : gen_framebuffer_active
     // --------------------------------------------------
     // Local parameters
     // --------------------------------------------------
@@ -923,7 +934,7 @@ generate
 
     // Base addresses of frame buffers in SDRAM
     localparam logic [ADDR_WIDTH_TOTAL-1:0] FRAME_A_BASE_ADDR = 'b0;
-    localparam logic [ADDR_WIDTH_TOTAL-1:0] FRAME_B_BASE_ADDR = FRAME_SIZE_WORDS;
+    localparam logic [ADDR_WIDTH_TOTAL-1:0] FRAME_B_BASE_ADDR = ADDR_WIDTH_TOTAL'(FRAME_SIZE_WORDS);
 
     // FIFO read/write thresholds
     localparam int READ_THRESHOLD = 32;
@@ -950,6 +961,7 @@ generate
 
     // Counter for generating m_axis_last
     logic [$clog2(FRAME_WIDTH)-1:0] m_axis_x_cnt;
+    logic [$clog2(FRAME_HEIGHT)-1:0] m_axis_y_cnt;
 
     // --------------------------------------------------
     // SDRAM Controller Instance
@@ -1006,7 +1018,7 @@ generate
             end
 
             // Buffer A state machine
-            case (buf_a_state)
+            unique case (buf_a_state)
                 EMPTY:   begin
                   if (write_buf == BUF_A)
                     buf_a_state <= FILLING;
@@ -1026,7 +1038,7 @@ generate
             endcase
 
             // Buffer B state machine
-            case (buf_b_state)
+            unique case (buf_b_state)
                 EMPTY:   begin
                   if (write_buf == BUF_B)
                     buf_b_state <= FILLING;
@@ -1084,7 +1096,8 @@ generate
             if (write_addr_cnt == FRAME_SIZE_WORDS - 1)
               write_addr_cnt <= '0;
             else
-              write_addr_cnt <= write_addr_cnt + 1;
+//              write_addr_cnt <= write_addr_cnt + $clog2(FRAME_SIZE_WORDS)'(1);
+write_addr_cnt <= write_addr_cnt + $bits(write_addr_cnt)'(1);
         end
     end
 
@@ -1093,10 +1106,10 @@ generate
         if (!rstn || swap_buffers_req)
           wr_cmd_addr_cnt <= '0;
         else if (wr_cmd_valid && wr_cmd_ready) begin
-            if (wr_cmd_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
+            if (wr_cmd_addr_cnt >= FRAME_SIZE_WORDS - $bits(wr_cmd_addr_cnt)'(BURST_LEN))
               wr_cmd_addr_cnt <= '0;
             else
-              wr_cmd_addr_cnt <= wr_cmd_addr_cnt + BURST_LEN;
+              wr_cmd_addr_cnt <= wr_cmd_addr_cnt + $bits(wr_cmd_addr_cnt)'(BURST_LEN);
         end
     end
 
@@ -1128,29 +1141,38 @@ generate
         if (!rstn || swap_buffers_req)
           read_addr_cnt <= '0;
         else if (rd_cmd_valid && rd_cmd_ready) begin
-            if (read_addr_cnt >= FRAME_SIZE_WORDS - BURST_LEN)
+            if (read_addr_cnt >= FRAME_SIZE_WORDS - $bits(read_addr_cnt)'(BURST_LEN))
               read_addr_cnt <= '0;
             else
-              read_addr_cnt <= read_addr_cnt + BURST_LEN;
+              read_addr_cnt <= read_addr_cnt + $bits(read_addr_cnt)'(BURST_LEN);
         end
     end
 
     // --------------------------------------------------
-    // m_axis_last_pixel generation
+    // m_axis_last a m_axis_user generovanie (EOL a SOF)
     // --------------------------------------------------
-    assign m_axis_last_pixel = (m_axis_x_cnt == FRAME_SIZE_WORDS - 1);
-    
+    assign m_axis_last = (m_axis_x_cnt == FRAME_WIDTH - 1); // EOL
+    assign m_axis_user = (m_axis_x_cnt == 0) && (m_axis_y_cnt == 0); // SOF
+
     always_ff @(posedge clk) begin
-        if (!rstn)
-          m_axis_x_cnt <= '0;
-        else if (m_axis_valid && m_axis_ready) begin
-            // if last pixel in FRAME
-            if (m_axis_last_pixel) 
+        if (!rstn) begin
+            m_axis_x_cnt <= '0;
+            m_axis_y_cnt <= '0;
+        end else if (m_axis_valid && m_axis_ready) begin // Aktualizuj len pri platnom prenose
+            // Horizontálne počítadlo
+            if (m_axis_last) begin // Ak sme na konci riadku
                 m_axis_x_cnt <= '0;
-            else
-                m_axis_x_cnt <= m_axis_x_cnt + 1;
+                // Vertikálne počítadlo
+                if (m_axis_y_cnt == FRAME_HEIGHT - 1) begin // Ak sme na konci posledného riadku
+                    m_axis_y_cnt <= '0; // Reset pre nový snímok
+                end else begin
+                    m_axis_y_cnt <= m_axis_y_cnt + $bits(m_axis_y_cnt)'(1); // Posun na ďalší riadok
+                end
+            end else begin
+                m_axis_x_cnt <= m_axis_x_cnt + $bits(m_axis_x_cnt)'(1); // Posun na ďalší pixel
+                // m_axis_y_cnt sa nemení
+            end
         end
-        m_axis_video_out.TLAST <= m_axis_last_pixel;
     end
 
     // --------------------------------------------------
@@ -1171,9 +1193,12 @@ generate
     assign debug_led_1_o[5] = wr_cmd_ready;
     assign debug_led_1_o[6] = rd_cmd_valid;
     assign debug_led_1_o[7] = rd_cmd_ready;
-  endgenerate    
+  end // gen_framebuffer_active
+
+endgenerate
 
 endmodule
 
+`default_nettype wire
 
 `endif // FRAMEBUFFER_PINGPONG_SDRAM_FINAL_SV

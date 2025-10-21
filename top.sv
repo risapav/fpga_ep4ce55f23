@@ -10,7 +10,7 @@
 //
 // ===================================================================================
 
-(* default_nettype = "none" *)
+`default_nettype none
 
 import vga_pkg::*;       // Obsahuje typy VGA, farby a parametre
 import axi_pkg::*;       // AXI definície
@@ -97,8 +97,7 @@ module top (
 
             axis_picture_generator #(
               .H_RES(H_RES),
-              .V_RES(V_RES),
-              .TLAST_MODE(FRAME)
+              .V_RES(V_RES)
               ) u_axis_picture_generator (
                 .clk_i(clk_2),
                 .rst_ni(rstn_sync_2),
@@ -144,6 +143,7 @@ module top (
 
             axis_to_vga #(
               .FIFO_DEPTH(4096),
+              .ASYNC_RESET(1),
               .C_VGA_MODE(C_VGA_MODE)
               )u_axis_to_vga (
                 .axi_clk_i(clk_2),
@@ -164,13 +164,7 @@ module top (
             assign VGA_R = vga_rgb.red;
             assign VGA_G = vga_rgb.grn;
             assign VGA_B = vga_rgb.blu;
-/*
-            assign LED_J10[0] = fifo_empty;
-            assign LED_J10[1] = fifo_full;
-            assign LED_J10[2] = hde;
-            assign LED_J10[3] = vde;
-            assign LED_J10[4] = |gen_to_fb_if.TDATA;
-*/
+
         // ----------------------------------------------------------------------
         // -- REŽIM 1: Test fyzickej SDRAM
         // ----------------------------------------------------------------------
@@ -247,3 +241,5 @@ module top (
     assign LED[5] = ~BSW[2];
 */
 endmodule
+
+`default_nettype wire
