@@ -124,16 +124,237 @@ module CountdownTimer #(
 
 endmodule
 
-// ------------------------------------------------------------
-// PointerSync: Generic pointer increment & Gray synchronization
-// ------------------------------------------------------------
+//================================================================
+// ZÁVISLOSTI (POMOCNÉ MODULY)
+//================================================================
+
+`ifndef ASYNC_FIFO_GENERIC_MODULE_DEFINED
+`define ASYNC_FIFO_GENERIC_MODULE_DEFINED
+// ============================================================================
+// Modul: AsyncFifoGeneric (Upravený pre 2 resety a registrovaný výstup)
+// ============================================================================
+/**
+ * @brief       Asynchrónne FIFO (Dual Reset, Registrovaný Výstup)
+ * @details     Používa Gray kód na bezpečnú synchronizáciu pointerov.
+ * Výstup `rd_data` a stav `rd_empty` sú registrované
+ * pre lepšie časovanie na úkor jedného taktu latencie.
+ */
+module AsyncFifoGeneric #(
+    parameter int DATA_WIDTH       = 16,
+    parameter int ADDR_WIDTH       = 4,
+    parameter bit ASYNC_RESET      = 1'b1,
+    parameter string RAM_STYLE     = "auto",
+    parameter bit TWO_STAGE_SYNC   = 1'b1
+)(
+    input  logic wr_rst_ni,
+    input  logic wr_clk,
+    input  logic wr_en,
+    input  logic [DATA_WIDTH-1:0] wr_data,
+    output logic wr_full,
+    output logic wr_overflow,
+
+    input  logic rd_rst_ni,
+    input  logic rd_clk,
+    input  logic rd_en,
+    output logic [DATA_WIDTH-1:0] rd_data, // Meno portu zostáva
+    output logic rd_empty,                // Meno portu zostáva
+    output logic rd_underflow,
+
+    output logic [$clog2(1<<ADDR_WIDTH):0] level
+);
+
+    localparam int DEPTH = 1 << ADDR_WIDTH;
+
+    // Pamäťový blok
+    (* ramstyle = RAM_STYLE *) logic [DATA_WIDTH-1:0] mem [DEPTH];
+
+    // Smerníky (pointers)
+    logic [ADDR_WIDTH:0] wr_ptr_bin, rd_ptr_bin;
+    logic [ADDR_WIDTH:0] wr_ptr_gray, rd_ptr_gray;
+    logic [ADDR_WIDTH:0] wr_ptr_gray_sync2; // wr_ptr synchronizovaný do rd_clk
+    logic [ADDR_WIDTH:0] rd_ptr_gray_sync2; // rd_ptr synchronizovaný do wr_clk
+    logic [ADDR_WIDTH:0] rd_ptr_bin_from_gray_sync;
+
+    // --- ZMENA: Signály pre registrovaný výstup ---
+    logic [DATA_WIDTH-1:0] mem_data_out;  // Kombinačný výstup z RAM
+    logic [DATA_WIDTH-1:0] rd_data_reg;   // Registrovaný dátový výstup
+    logic                  rd_empty_comb; // Kombinačný stav 'empty'
+    logic                  rd_empty_reg;  // Registrovaný stav 'empty'
+    // --- Koniec zmeny ---
+
+    // ---------------------------
+    // Write doména
+    // ---------------------------
+    PointerSync #(
+        .ADDR_WIDTH     ( ADDR_WIDTH     ),
+        .ASYNC_RESET    ( ASYNC_RESET    ),
+        .TWO_STAGE_SYNC ( TWO_STAGE_SYNC )
+    ) wr_sync_inst (
+        .clk                 ( wr_clk              ),
+        .rst_ni              ( wr_rst_ni           ),
+        .en                  ( wr_en && !wr_full   ),
+        .bin_ptr_out         ( wr_ptr_bin          ),
+        .other_gray_in       ( rd_ptr_gray         ),
+        .other_gray_sync_out ( rd_ptr_gray_sync2   )
+    );
+
+    // Pamäťový zápis + detekcia pretečenia
+    generate
+        if (ASYNC_RESET) begin : g_wr_async_reset
+            always_ff @(posedge wr_clk or negedge wr_rst_ni) begin
+                if (!wr_rst_ni)
+                    wr_overflow <= 1'b0;
+                else begin
+                    if (wr_en) begin
+                        if (!wr_full) begin
+                            mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
+                            wr_overflow <= 1'b0;
+                        end else begin
+                            wr_overflow <= 1'b1; // Pokus o zápis do plného FIFO
+                        end
+                    end else begin
+                        wr_overflow <= 1'b0;
+                    end
+                end
+            end
+        end else begin : g_wr_sync_reset
+            always_ff @(posedge wr_clk) begin
+                if (!wr_rst_ni)
+                    wr_overflow <= 1'b0;
+                else begin
+                    if (wr_en) begin
+                        if (!wr_full) begin
+                            mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
+                            wr_overflow <= 1'b0;
+                        end else begin
+                            wr_overflow <= 1'b1; // Pokus o zápis do plného FIFO
+                        end
+                    end else begin
+                        wr_overflow <= 1'b0;
+                    end
+                end
+            end
+        end
+    endgenerate
+
+    // Generovanie Gray kódu pre wr_ptr
+    assign wr_ptr_gray = (wr_ptr_bin >> 1) ^ wr_ptr_bin;
+
+    // Príznak 'Full' (bezpečný cez Gray kód)
+    assign wr_full = (wr_ptr_gray == {~rd_ptr_gray_sync2[ADDR_WIDTH],    // Invertovaný MSB
+                                     ~rd_ptr_gray_sync2[ADDR_WIDTH-1], // Invertovaný MSB-1
+                                      rd_ptr_gray_sync2[ADDR_WIDTH-2:0]});
+
+    // ---------------------------
+    // Read doména
+    // ---------------------------
+    PointerSync #(
+        .ADDR_WIDTH     ( ADDR_WIDTH     ),
+        .ASYNC_RESET    ( ASYNC_RESET    ),
+        .TWO_STAGE_SYNC ( TWO_STAGE_SYNC )
+    ) rd_sync_inst (
+        .clk                 ( rd_clk              ),
+        .rst_ni              ( rd_rst_ni           ),
+        .en                  ( rd_en && !rd_empty  ), // ZMENA: Používa finálny výstup 'rd_empty'
+        .bin_ptr_out         ( rd_ptr_bin          ),
+        .other_gray_in       ( wr_ptr_gray         ),
+        .other_gray_sync_out ( wr_ptr_gray_sync2   )
+    );
+
+    // Generovanie Gray kódu pre rd_ptr
+    assign rd_ptr_gray = (rd_ptr_bin >> 1) ^ rd_ptr_bin;
+
+    // --- ZMENA: Registrovaná logika čítania ---
+    // 1. Kombinačné čítanie z RAM
+    assign mem_data_out = mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
+    // 2. Kombinačný výpočet 'empty'
+    assign rd_empty_comb = (rd_ptr_gray == wr_ptr_gray_sync2);
+
+    // 3. Priradenie registrovaných výstupov
+    assign rd_data  = rd_data_reg;
+    assign rd_empty = rd_empty_reg;
+    // --- Koniec zmeny ---
+
+    // Detekcia podtečenia a registrácia výstupov
+    generate
+        if (ASYNC_RESET) begin : g_rd_async_reset
+            always_ff @(posedge rd_clk or negedge rd_rst_ni) begin
+                if (!rd_rst_ni) begin
+                    rd_underflow <= 1'b0;
+                    rd_data_reg  <= '0;    // ZMENA: Inicializácia registra
+                    rd_empty_reg <= 1'b1;   // ZMENA: Začína ako 'empty'
+                end else begin
+                    // Vždy aktualizujeme stav 'empty'
+                    rd_empty_reg <= rd_empty_comb;
+
+                    // Ak prebieha čítanie (rd_en) a FIFO *nebolo* prázdne (v predch. takte)
+                    if (rd_en && !rd_empty_reg) begin
+                        rd_data_reg <= mem_data_out; // Zachytíme nové dáta
+                    end
+
+                    // Detekcia podtečenia
+                    if (rd_en)
+                        rd_underflow <= rd_empty_reg; // ZMENA: Použije registrovaný stav
+                    else
+                        rd_underflow <= 1'b0;
+                end
+            end
+        end else begin : g_rd_sync_reset
+            always_ff @(posedge rd_clk) begin
+                if (!rd_rst_ni) begin
+                    rd_underflow <= 1'b0;
+                    rd_data_reg  <= '0;    // ZMENA: Inicializácia registra
+                    rd_empty_reg <= 1'b1;   // ZMENA: Začína ako 'empty'
+                end else begin
+                    // Vždy aktualizujeme stav 'empty'
+                    rd_empty_reg <= rd_empty_comb;
+
+                    // Ak prebieha čítanie (rd_en) a FIFO *nebolo* prázdne (v predch. takte)
+                    if (rd_en && !rd_empty_reg) begin
+                        rd_data_reg <= mem_data_out; // Zachytíme nové dáta
+                    end
+
+                    // Detekcia podtečenia
+                    if (rd_en)
+                        rd_underflow <= rd_empty_reg; // ZMENA: Použije registrovaný stav
+                    else
+                        rd_underflow <= 1'b0;
+                end
+            end
+        end
+    endgenerate
+
+    // ---------------------------
+    // Výpočet zaplnenia (v 'wr_clk' doméne)
+    // ---------------------------
+    GrayToBin #(.ADDR_WIDTH(ADDR_WIDTH)) gray2bin_inst (
+        .gray ( rd_ptr_gray_sync2         ),
+        .bin  ( rd_ptr_bin_from_gray_sync )
+    );
+
+    assign level = wr_ptr_bin - rd_ptr_bin_from_gray_sync;
+
+endmodule
+`endif // ASYNC_FIFO_GENERIC_MODULE_DEFINED
+
+
+`ifndef POINTER_SYNC_MODULE_DEFINED
+`define POINTER_SYNC_MODULE_DEFINED
+// ============================================================================
+// Modul: PointerSync (Upravený pre rst_ni)
+// ============================================================================
+/**
+ * @brief       Synchronizátor pointerov (Gray kód)
+ * @details     Obsahuje logiku pre inkrementáciu binárneho pointera
+ * a 2-stupňovú synchronizáciu Gray pointera z druhej domény.
+ */
 module PointerSync #(
     parameter int ADDR_WIDTH = 4,
-    parameter bit ASYNC_RESET = 1,    // 1 = asynchrónny reset, 0 = synchrónny reset
-    parameter bit TWO_STAGE_SYNC = 1
+    parameter bit ASYNC_RESET = 1'b1,
+    parameter bit TWO_STAGE_SYNC = 1'b1
 )(
     input  logic clk,
-    input  logic rstn,
+    input  logic rst_ni, // Upravené meno na 'active low'
     input  logic en,
     output logic [ADDR_WIDTH:0] bin_ptr_out,
     input  logic [ADDR_WIDTH:0] other_gray_in,
@@ -143,14 +364,14 @@ module PointerSync #(
 
     generate
         if (ASYNC_RESET) begin : g_async_reset
-            always_ff @(posedge clk or negedge rstn) begin
-                if (!rstn) begin
-                    bin_ptr_out <= '0;
-                    other_gray_sync1 <= '0;
+            always_ff @(posedge clk or negedge rst_ni) begin
+                if (!rst_ni) begin
+                    bin_ptr_out         <= '0;
+                    other_gray_sync1    <= '0;
                     other_gray_sync_out <= '0;
                 end else begin
                     if (en)
-                      bin_ptr_out <= bin_ptr_out + $bits(bin_ptr_out)'(1);
+                        bin_ptr_out <= bin_ptr_out + $bits(bin_ptr_out)'(1);
 
                     other_gray_sync1 <= other_gray_in;
                     if (TWO_STAGE_SYNC)
@@ -161,13 +382,13 @@ module PointerSync #(
             end
         end else begin : g_sync_reset
             always_ff @(posedge clk) begin
-                if (!rstn) begin
-                    bin_ptr_out <= '0;
-                    other_gray_sync1 <= '0;
+                if (!rst_ni) begin
+                    bin_ptr_out         <= '0;
+                    other_gray_sync1    <= '0;
                     other_gray_sync_out <= '0;
                 end else begin
                     if (en)
-                      bin_ptr_out <= bin_ptr_out + $bits(bin_ptr_out)'(1);
+                        bin_ptr_out <= bin_ptr_out + $bits(bin_ptr_out)'(1);
 
                     other_gray_sync1 <= other_gray_in;
                     if (TWO_STAGE_SYNC)
@@ -179,188 +400,32 @@ module PointerSync #(
         end
     endgenerate
 endmodule
+`endif // POINTER_SYNC_MODULE_DEFINED
 
-// ------------------------------------------------------------
-// GrayToBin: Converts Gray code to binary
-// ------------------------------------------------------------
+
+`ifndef GRAY_TO_BIN_MODULE_DEFINED
+`define GRAY_TO_BIN_MODULE_DEFINED
+// ============================================================================
+// Modul: GrayToBin (Z inšpirácie)
+// ============================================================================
+/**
+ * @brief       Prevodník Gray kódu na binárny
+ */
 module GrayToBin #(
     parameter int ADDR_WIDTH = 4
 )(
     input  logic [ADDR_WIDTH:0] gray,
     output logic [ADDR_WIDTH:0] bin
 );
-  assign bin[ADDR_WIDTH] = gray[ADDR_WIDTH];
-  genvar i;
-  generate
-    for (i = ADDR_WIDTH-1; i >= 0; i=i-1) begin : g_gray2bin
-      assign bin[i] = bin[i+1] ^ gray[i];
-    end
-  endgenerate
-endmodule
-
-// ------------------------------------------------------------
-// AsyncFifoGeneric: Asynchronous FIFO with safety flags
-// Features:
-//   - Optional 2-step Gray synchronizer for CDC safety
-//   - Supports asynchronous or synchronous reset
-//   - Overflow / underflow detection
-//   - Safe FIFO level across clock domains
-//   - Parameterizable RAM style (M20K/M9K)
-// ------------------------------------------------------------
-module AsyncFifoGeneric #(
-    parameter int DATA_WIDTH       = 16,
-    parameter int ADDR_WIDTH       = 4,
-    parameter bit ASYNC_RESET      = 1, // 1 = asynchrónny reset, 0 = synchrónny reset
-    parameter string RAM_STYLE     = "M20K",
-    parameter bit TWO_STAGE_SYNC   = 1
-)(
-    input  logic rstn,
-    input  logic wr_clk,
-    input  logic wr_en,
-    input  logic [DATA_WIDTH-1:0] wr_data,
-    output logic wr_full,
-    output logic wr_overflow,
-    input  logic rd_clk,
-    input  logic rd_en,
-    output logic [DATA_WIDTH-1:0] rd_data,
-    output logic rd_empty,
-    output logic rd_underflow,
-    output logic [$clog2(1<<ADDR_WIDTH):0] level
-);
-
-    localparam int DEPTH = 1 << ADDR_WIDTH;
-
-    // Memory block
-    (* ramstyle = RAM_STYLE *) logic [DATA_WIDTH-1:0] mem [DEPTH];
-
-    // Pointer signals
-    logic [ADDR_WIDTH:0] wr_ptr_bin, rd_ptr_bin;
-    logic [ADDR_WIDTH:0] wr_ptr_gray, rd_ptr_gray;
-
-    logic [ADDR_WIDTH:0] wr_ptr_gray_sync2;
-    logic [ADDR_WIDTH:0] rd_ptr_gray_sync2;
-
-    logic [ADDR_WIDTH:0] rd_ptr_bin_from_gray_sync;
-
-    // ---------------------------
-    // Write domain with pointer sync
-    // ---------------------------
-    PointerSync #(
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .ASYNC_RESET(ASYNC_RESET),
-        .TWO_STAGE_SYNC(TWO_STAGE_SYNC)
-    ) wr_sync_inst (
-        .clk(wr_clk),
-        .rstn(rstn),
-        .en(wr_en && !wr_full),
-        .bin_ptr_out(wr_ptr_bin),
-        .other_gray_in(rd_ptr_gray),
-        .other_gray_sync_out(rd_ptr_gray_sync2)
-    );
-
+    assign bin[ADDR_WIDTH] = gray[ADDR_WIDTH];
+    genvar i;
     generate
-        // Memory write + overflow detection
-        if (ASYNC_RESET) begin : g_wr_async_reset
-            always_ff @(posedge wr_clk or negedge rstn) begin
-                if (!rstn)
-                    wr_overflow <= 1'b0;
-                else begin
-                    if (wr_en) begin
-                        if (!wr_full) begin
-                            mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
-                            wr_overflow <= 1'b0;
-                        end else begin
-                            wr_overflow <= 1'b1; // Write attempted to full FIFO
-                        end
-                    end else begin
-                        wr_overflow <= 1'b0;
-                    end
-                end
-            end
-        end else begin : g_wr_sync_reset
-            always_ff @(posedge wr_clk) begin
-                if (!rstn)
-                    wr_overflow <= 1'b0;
-                else begin
-                    if (wr_en) begin
-                        if (!wr_full) begin
-                            mem[wr_ptr_bin[ADDR_WIDTH-1:0]] <= wr_data;
-                            wr_overflow <= 1'b0;
-                        end else begin
-                            wr_overflow <= 1'b1; // Write attempted to full FIFO
-                        end
-                    end else begin
-                        wr_overflow <= 1'b0;
-                    end
-                end
-            end
+        for (i = ADDR_WIDTH-1; i >= 0; i=i-1) begin : g_gray2bin
+            assign bin[i] = bin[i+1] ^ gray[i];
         end
     endgenerate
-
-    // Gray code generation for write pointer
-    assign wr_ptr_gray = (wr_ptr_bin >> 1) ^ wr_ptr_bin;
-
-    // Full flag (safety via Gray synchronized pointer)
-    assign wr_full = (wr_ptr_gray == {~rd_ptr_gray_sync2[ADDR_WIDTH],   // Invertovaný MSB
-                    ~rd_ptr_gray_sync2[ADDR_WIDTH-1], // Invertovaný MSB-1
-                    rd_ptr_gray_sync2[ADDR_WIDTH-2:0]}); // Zvyšok
-
-    // ---------------------------
-    // Read domain with pointer sync
-    // ---------------------------
-    PointerSync #(
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .ASYNC_RESET(ASYNC_RESET),
-        .TWO_STAGE_SYNC(TWO_STAGE_SYNC)
-    ) rd_sync_inst (
-        .clk(rd_clk),
-        .rstn(rstn),
-        .en(rd_en && !rd_empty),
-        .bin_ptr_out(rd_ptr_bin),
-        .other_gray_in(wr_ptr_gray),
-        .other_gray_sync_out(wr_ptr_gray_sync2)
-    );
-
-    assign rd_ptr_gray = (rd_ptr_bin >> 1) ^ rd_ptr_bin;
-    assign rd_data     = mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
-    assign rd_empty    = (rd_ptr_gray == wr_ptr_gray_sync2);
-
-    generate
-      if (ASYNC_RESET) begin : g_rd_async_reset
-        // Underflow detection
-        always_ff @(posedge rd_clk or negedge rstn) begin
-            if (!rstn)
-                rd_underflow <= 1'b0;
-            else if (rd_en)
-                rd_underflow <= rd_empty; // 1 if read attempted on empty
-            else
-                rd_underflow <= 1'b0;
-        end
-      end else begin : g_rd_sync_reset
-        // Underflow detection
-        always_ff @(posedge rd_clk) begin
-            if (!rstn)
-                rd_underflow <= 1'b0;
-            else if (rd_en)
-                rd_underflow <= rd_empty; // 1 if read attempted on empty
-            else
-                rd_underflow <= 1'b0;
-        end
-      end
-    endgenerate
-
-    // ---------------------------
-    // FIFO level calculation (safe CDC)
-    // ---------------------------
-    GrayToBin #(.ADDR_WIDTH(ADDR_WIDTH)) gray2bin_inst (
-        .gray(rd_ptr_gray_sync2),
-        .bin(rd_ptr_bin_from_gray_sync)
-    );
-
-    assign level = wr_ptr_bin - rd_ptr_bin_from_gray_sync;
-
 endmodule
-
+`endif // GRAY_TO_BIN_MODULE_DEFINED
 
 // ============================================================================
 // >>> FSM #1 (Moore) – SDRAM Controller
