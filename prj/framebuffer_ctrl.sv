@@ -1,20 +1,25 @@
 // =============================================================================
-// Súbor: FramebufferWithSdramController_Final.sv
-// Verzia: 4.3 (Odstránené $bits)
-// Dátum: 17. október 2025
+// Súbor: framebuffer_ctrl.sv
+// Verzia: 4.5 (Refaktorované AXI rozhrania + explicitný clk/rstn)
+// Dátum: 27. október 2025
 //
 // Popis:
 // Kompletný návrh ping-pong framebuffer kontroléra.
-// Premenovaný modul na 'framebuffer_ctrl'.
+// Modul používa explicitné 'clk' a 'rstn' porty a
+// AXI4-Stream rozhrania 'axi4s_if.slave' a 'axi4s_if.master'.
 //
-// Zmeny vo verzii 4.3:
-// - Odstránené použitie '$bits' pri inkrementácii počítadiel pre lepšiu
-//   kompatibilitu s Quartus.
+// Zmeny vo verzii 4.5:
+// - Refaktorovaná hlavička modulu podľa požiadavky:
+//   - Ponechané explicitné porty clk, clk_sh, rstn.
+//   - Odstránené jednotlivé AXI signály (s_axis_valid, ...).
+//   - Pridané AXI rozhrania s_axis a m_axis.
+// - Interná logika upravená na prácu s s_axis.TVALID, m_axis.TDATA, atď.
 //
-// Zmeny vo verzii 4.2:
-// - Refaktoring: Odstránená definícia modulu 'SdramController'.
-//   Modul teraz závisí od externého súboru 'SdramController.sv'.
-// - Premenovanie: Modul 'FramebufferController' premenovaný na 'framebuffer_ctrl'.
+// Závislosti:
+// - Balíček 'sdram_pkg'
+// - Balíček 'framebuffer_pkg'
+// - Modul 'SdramController'
+// - Rozhranie 'axi4s_if' (z axi_interfaces.sv)
 // =============================================================================
 
 `ifndef FRAMEBUFFER_CTRL_SV // Zmenené meno include guard
@@ -25,17 +30,13 @@
 // Importy balíčkov (teraz sú oba externé)
 import sdram_pkg::*;
 import framebuffer_pkg::*;
+// Import AXI rozhrania pre definíciu 'axi4s_if'
+import axi_pkg::*; // Potrebné pre axi4s_if (ak axi_interfaces importuje axi_pkg)
+// Predpokladáme, že axi_interfaces.sv je zahrnutý v projekte
+// a definuje axi4s_if
 
 // ============================================================================
 // >>> Ping-Pong Framebuffer Kontrolér <<<
-// Typ: Moore FSM pre stavy buffrov
-// Účel: Riadi zápis a čítanie dvoch buffrov v SDRAM pamäti
-//       prostredníctvom modulu SdramController.
-//
-// Závislosti:
-// - Balíček 'sdram_pkg' (musí byť v projekte)
-// - Balíček 'framebuffer_pkg' (musí byť v projekte)
-// - Modul 'SdramController' (musí byť v projekte)
 // ============================================================================
 module framebuffer_ctrl #( // Premenovaný modul
     // --- Parametre rozlíšenia a režimu ---
@@ -43,23 +44,16 @@ module framebuffer_ctrl #( // Premenovaný modul
     parameter int FRAME_HEIGHT = 600,
     parameter op_mode_e C_OP_MODE = NORMAL
 )(
+    // --- REFAKTOROVANÉ PORTY ---
     input  logic clk,
     input  logic clk_sh, // Fázovo posunutý CLK pre SDRAM
     input  logic rstn,
 
-    // AXI Stream Slave Interface (input frame data)
-    input  logic s_axis_valid,
-    output logic s_axis_ready,
-    input  logic [sdram_pkg::DATA_WIDTH-1:0] s_axis_data, // Použitie scope pre parameter
-    input  logic s_axis_last,
-    input  logic s_axis_user,
-
-    // AXI Stream Master Interface (output frame data)
-    output logic m_axis_valid,
-    input  logic m_axis_ready,
-    output logic [sdram_pkg::DATA_WIDTH-1:0] m_axis_data, // Použitie scope pre parameter
-    output logic m_axis_last,
-    output logic m_axis_user,
+    // Vstupné AXI rozhranie (poskytuje vstupné dáta)
+    axi4s_if.slave  s_axis,
+    // Výstupné AXI rozhranie (poskytuje výstupné dáta)
+    axi4s_if.master m_axis,
+    // --- Koniec refaktorovaných portov ---
 
     // SDRAM interface (priamo na piny kontroléra)
     output logic [sdram_pkg::ROW_ADDR_WIDTH-1:0] sdram_addr,
@@ -82,14 +76,14 @@ module framebuffer_ctrl #( // Premenovaný modul
 generate
   // ==============================================================
   // REŽIM 1: PASSTHROUGH (Premostenie)
-  // Jednoducho prepojí vstupný stream na výstupný.
   // ==============================================================
   if (C_OP_MODE == PASSTHROUGH) begin : gen_passthrough
-        assign m_axis_valid = s_axis_valid;
-        assign m_axis_data  = 16'hFFE0;//s_axis_data;
-        assign m_axis_last  = s_axis_last;
-        assign m_axis_user  = s_axis_user;
-        assign s_axis_ready = m_axis_ready;
+        // Priame prepojenie signálov z vstupného do výstupného rozhrania
+        assign m_axis.TVALID = s_axis.TVALID;
+        assign m_axis.TDATA  = s_axis.TDATA;
+        assign m_axis.TLAST  = s_axis.TLAST;
+        assign m_axis.TUSER  = s_axis.TUSER;
+        assign s_axis.TREADY = m_axis.TREADY;
 
         // Bezpečné zaparkovanie SDRAM pinov (kontrolér nie je aktívny)
         assign sdram_dq    = {sdram_pkg::DATA_WIDTH{1'bz}}; // Správny tristate
@@ -104,16 +98,16 @@ generate
         assign sdram_dqm   = '0;
 
         // Diagnostika pre tento režim
-        assign debug_led_0_o[0]   = s_axis_valid;
-        assign debug_led_0_o[1]   = s_axis_ready;
-        assign debug_led_0_o[2]   = s_axis_last;
-        assign debug_led_0_o[3]   = s_axis_user;
+        assign debug_led_0_o[0]   = s_axis.TVALID;
+        assign debug_led_0_o[1]   = s_axis.TREADY;
+        assign debug_led_0_o[2]   = s_axis.TLAST;
+        assign debug_led_0_o[3]   = s_axis.TUSER[0]; // Predpokladáme, že TUSER[0] je relevantný
         assign debug_led_0_o[7:4] = 4'b0;
 
-        assign debug_led_1_o[0]   = m_axis_valid;
-        assign debug_led_1_o[1]   = m_axis_ready;
-        assign debug_led_1_o[2]   = m_axis_last;
-        assign debug_led_1_o[3]   = m_axis_user;
+        assign debug_led_1_o[0]   = m_axis.TVALID;
+        assign debug_led_1_o[1]   = m_axis.TREADY;
+        assign debug_led_1_o[2]   = m_axis.TLAST;
+        assign debug_led_1_o[3]   = m_axis.TUSER[0];
         assign debug_led_1_o[7:4] = 4'b0;
   end
   // ==============================================================
@@ -172,30 +166,26 @@ generate
     // --------------------------------------------------
     SdramController #(
         .CFifoAddrWidth(CFifoAddrWidth)
-        // Ostatné parametre časovania (tRP, tRCD, atď.) sú
-        // ponechané na predvolených hodnotách definovaných v SdramController.sv
     ) sdram_inst (
         .clk(clk),
         .clk_sh(clk_sh),
         .rstn(rstn),
 
         // --- Pripojenie príkazov a dát ---
-        // Zápis (Framebuffer -> SDRAM)
         .wr_cmd_data(wr_cmd_data),
         .wr_cmd_valid(wr_cmd_valid),
         .wr_cmd_ready(wr_cmd_ready),
-        .wdata(s_axis_data),         // Dáta priamo zo vstupu
-        .wdata_valid(s_axis_valid),
-        .wdata_ready(s_axis_ready),  // Back-pressure na vstup
+        .wdata(s_axis.TDATA),         // Priamo z AXI rozhrania
+        .wdata_valid(s_axis.TVALID),  // Priamo z AXI rozhrania
+        .wdata_ready(s_axis.TREADY),  // Priamo na AXI rozhranie
         .wdata_level(wdata_level),
 
-        // Čítanie (SDRAM -> Framebuffer)
         .rd_cmd_data(rd_cmd_data),
         .rd_cmd_valid(rd_cmd_valid),
         .rd_cmd_ready(rd_cmd_ready),
-        .rdata(m_axis_data),         // Dáta priamo na výstup
-        .rdata_valid(m_axis_valid),  // Valid signál na výstup
-        .rdata_ready(m_axis_ready),  // Back-pressure z výstupu
+        .rdata(m_axis.TDATA),         // Priamo na AXI rozhranie
+        .rdata_valid(m_axis.TVALID),  // Priamo na AXI rozhranie
+        .rdata_ready(m_axis.TREADY),  // Priamo z AXI rozhrania
         .rdata_level(rdata_level),
 
         // --- Pripojenie fyzických pinov SDRAM ---
@@ -216,52 +206,45 @@ generate
     // --------------------------------------------------
     always_ff @(posedge clk) begin
         if (!rstn) begin
-            // Inicializačný stav
             buf_a_state <= EMPTY;
             buf_b_state <= EMPTY;
-            write_buf   <= BUF_A; // Začíname písať do A
-            read_buf    <= BUF_B; // Budeme čítať z B (keď bude A plný)
+            write_buf   <= BUF_A;
+            read_buf    <= BUF_B;
             first_frame_done <= 1'b0;
         end else begin
-            // --- Logika prehodenia (Swap) ---
             if (swap_buffers_req) begin
-                write_buf <= read_buf;  // Nový buffer na zápis je ten, z ktorého sa čítalo
-                read_buf  <= write_buf;  // Nový buffer na čítanie je ten, čo sa práve zaplnil
-                first_frame_done <= 1'b1; // Už máme prvý platný buffer
+                write_buf <= read_buf;
+                read_buf  <= write_buf;
+                first_frame_done <= 1'b1;
             end
 
-            // --- FSM pre Buffer A ---
             unique case (buf_a_state)
                 EMPTY:   begin
-                  if (write_buf == BUF_A) // Ak bol tento buffer vybraný na zápis
+                  if (write_buf == BUF_A)
                     buf_a_state <= FILLING;
                 end
                 FILLING: begin
-                  // Posledný pixel je zapísaný (sledujeme vstupný stream)
-                  if (s_axis_valid && s_axis_ready && write_addr_cnt == CFrameSizeWords - 1)
+                  if (s_axis.TVALID && s_axis.TREADY && write_addr_cnt == CFrameSizeWords - 1)
                     buf_a_state <= FULL;
                 end
                 FULL:    begin
-                  // Ak bol tento buffer vybraný na čítanie
                   if (read_buf == BUF_A && first_frame_done)
                     buf_a_state <= READING;
                 end
                 READING: begin
-                  // Ak bol vydaný príkaz na čítanie posledného burstu
                   if (rd_cmd_valid && rd_cmd_ready && read_addr_cnt >= CFrameSizeWords - sdram_pkg::BURST_LEN)
-                    buf_a_state <= EMPTY; // Buffer je prázdny a pripravený na nový zápis
+                    buf_a_state <= EMPTY;
                 end
-                default: buf_a_state <= EMPTY; // Bezpečný stav
+                default: buf_a_state <= EMPTY;
             endcase
 
-            // --- FSM pre Buffer B (identická logika) ---
             unique case (buf_b_state)
                 EMPTY:   begin
                   if (write_buf == BUF_B)
                     buf_b_state <= FILLING;
                 end
                 FILLING: begin
-                  if (s_axis_valid && s_axis_ready && write_addr_cnt == CFrameSizeWords - 1)
+                  if (s_axis.TVALID && s_axis.TREADY && write_addr_cnt == CFrameSizeWords - 1)
                     buf_b_state <= FULL;
                 end
                 FULL:    begin
@@ -272,7 +255,7 @@ generate
                   if (rd_cmd_valid && rd_cmd_ready && read_addr_cnt >= CFrameSizeWords - sdram_pkg::BURST_LEN)
                     buf_b_state <= EMPTY;
                 end
-                default: buf_b_state <= EMPTY; // Bezpečný stav
+                default: buf_b_state <= EMPTY;
             endcase
         end
     end
@@ -280,121 +263,105 @@ generate
     // Kombinačná logika pre žiadosť o prehodenie buffrov
     always_comb begin
         swap_buffers_req = 1'b0;
-        // Prípad 1: Písali sme do A, A je plný. Čítali sme z B, B je prázdny.
         if (write_buf == BUF_A && buf_a_state == FULL && read_buf == BUF_B && buf_b_state == EMPTY)
             swap_buffers_req = 1'b1;
-        // Prípad 2: Písali sme do B, B je plný. Čítali sme z A, A je prázdny.
         else if (write_buf == BUF_B && buf_b_state == FULL && read_buf == BUF_A && buf_a_state == EMPTY)
             swap_buffers_req = 1'b1;
     end
 
     // --------------------------------------------------
-    // Generátor príkazov na ZÁPIS (Write Command Generator)
+    // Generátor príkazov na ZÁPIS
     // --------------------------------------------------
     always_comb begin
         logic [CAddrWidthTotal-1:0] base_addr;
         base_addr = (write_buf == BUF_A) ? CFrameABaseAddr : CFrameBBaseAddr;
         wr_full_addr = base_addr + wr_cmd_addr_cnt;
 
-        // Rozdelenie adresy pre SDRAM príkaz
         wr_cmd_data.addr.row  = wr_full_addr[sdram_pkg::COL_ADDR_WIDTH + sdram_pkg::BANK_ADDR_WIDTH +: sdram_pkg::ROW_ADDR_WIDTH];
         wr_cmd_data.addr.bank = wr_full_addr[sdram_pkg::COL_ADDR_WIDTH +: sdram_pkg::BANK_ADDR_WIDTH];
         wr_cmd_data.addr.col  = wr_full_addr[0 +: sdram_pkg::COL_ADDR_WIDTH];
-
-        wr_cmd_data.rw = 1'b1; // Zápis
-        wr_cmd_data.auto_precharge = 1'b0; // Bez auto-precharge
-
-        // Príkaz je platný, ak je vo 'wdata_fifo' dosť dát na celý burst
+        wr_cmd_data.rw = 1'b1;
+        wr_cmd_data.auto_precharge = 1'b0;
         wr_cmd_valid = (wdata_level >= sdram_pkg::BURST_LEN);
     end
 
-    // Počítadlo adries pre pixely (sleduje s_axis stream)
+    // Počítadlo adries pre pixely
     always_ff @(posedge clk) begin
-        if (!rstn || swap_buffers_req) // Reset pri resete alebo prehodení buffrov
+        if (!rstn || swap_buffers_req)
           write_addr_cnt <= '0;
-        else if (s_axis_valid && s_axis_ready) begin // Len ak prebehne platný prenos
+        else if (s_axis.TVALID && s_axis.TREADY) begin
             if (write_addr_cnt == CFrameSizeWords - 1)
-              write_addr_cnt <= '0; // Pretečenie na konci snímku
+              write_addr_cnt <= '0;
             else
-              write_addr_cnt <= write_addr_cnt + 1'b1; // Odstránené $bits
+              write_addr_cnt <= write_addr_cnt + 1'b1;
         end
     end
 
-    // Počítadlo adries pre príkazy zápisu (skoky po BURST_LEN)
+    // Počítadlo adries pre príkazy zápisu
     always_ff @(posedge clk) begin
         if (!rstn || swap_buffers_req)
           wr_cmd_addr_cnt <= '0;
-        else if (wr_cmd_valid && wr_cmd_ready) begin // Len ak kontrolér prijal príkaz
+        else if (wr_cmd_valid && wr_cmd_ready) begin
             if (wr_cmd_addr_cnt >= CFrameSizeWords - sdram_pkg::BURST_LEN)
               wr_cmd_addr_cnt <= '0;
             else
-              wr_cmd_addr_cnt <= wr_cmd_addr_cnt + sdram_pkg::BURST_LEN; // Odstránené $bits
+              wr_cmd_addr_cnt <= wr_cmd_addr_cnt + sdram_pkg::BURST_LEN;
         end
     end
 
     // --------------------------------------------------
-    // Generátor príkazov na ČÍTANIE (Read Command Generator)
+    // Generátor príkazov na ČÍTANIE
     // --------------------------------------------------
     always_comb begin
         logic [CAddrWidthTotal-1:0] base_addr;
         base_addr = (read_buf == BUF_A) ? CFrameABaseAddr : CFrameBBaseAddr;
         rd_full_addr = base_addr + read_addr_cnt;
 
-        // Rozdelenie adresy
         rd_cmd_data.addr.row  = rd_full_addr[sdram_pkg::COL_ADDR_WIDTH + sdram_pkg::BANK_ADDR_WIDTH +: sdram_pkg::ROW_ADDR_WIDTH];
         rd_cmd_data.addr.bank = rd_full_addr[sdram_pkg::COL_ADDR_WIDTH +: sdram_pkg::BANK_ADDR_WIDTH];
         rd_cmd_data.addr.col  = rd_full_addr[0 +: sdram_pkg::COL_ADDR_WIDTH];
-
-        rd_cmd_data.rw = 1'b0; // Čítanie
+        rd_cmd_data.rw = 1'b0;
         rd_cmd_data.auto_precharge = 1'b0;
-
-        // Príkaz je platný, ak:
-        // 1. Už máme prvý snímok (first_frame_done)
-        // 2. Je miesto v 'rdata_fifo' (pod prahovou hodnotou)
-        // 3. Ešte sme nedočítali posledný burst snímku
-        // 4. Buffer, z ktorého čítame, je v stave READING
         rd_cmd_valid = first_frame_done &&
                        (rdata_level < CReadThreshold) &&
-                       (read_addr_cnt < CFrameSizeWords - sdram_pkg::BURST_LEN) && // Zabezpečí, že neprekročíme hranicu
+                       (read_addr_cnt < CFrameSizeWords - sdram_pkg::BURST_LEN) &&
                        ((read_buf == BUF_A) ? (buf_a_state == READING) : (buf_b_state == READING));
     end
 
-    // Počítadlo adries pre príkazy čítania (skoky po BURST_LEN)
+    // Počítadlo adries pre príkazy čítania
     always_ff @(posedge clk) begin
-        if (!rstn || swap_buffers_req) // Reset pri resete alebo prehodení
+        if (!rstn || swap_buffers_req)
           read_addr_cnt <= '0;
-        else if (rd_cmd_valid && rd_cmd_ready) begin // Len ak kontrolér prijal príkaz
+        else if (rd_cmd_valid && rd_cmd_ready) begin
             if (read_addr_cnt >= CFrameSizeWords - sdram_pkg::BURST_LEN)
-              read_addr_cnt <= '0; // Začíname odznova (aj keď by nemal nastať, poistka)
+              read_addr_cnt <= '0;
             else
-              read_addr_cnt <= read_addr_cnt + sdram_pkg::BURST_LEN; // Odstránené $bits
+              read_addr_cnt <= read_addr_cnt + sdram_pkg::BURST_LEN;
         end
     end
 
     // --------------------------------------------------
     // Generovanie výstupných TLAST (Koniec riadku) a TUSER (Začiatok snímku)
     // --------------------------------------------------
-    assign m_axis_last = (m_axis_x_cnt == FRAME_WIDTH - 1); // EOL
-    assign m_axis_user = (m_axis_x_cnt == 0) && (m_axis_y_cnt == 0); // SOF
+    assign m_axis.TLAST = (m_axis_x_cnt == FRAME_WIDTH - 1); // EOL
+    // Predpokladáme, že USER_WIDTH je 1. Pre širšie TUSER by bolo potrebné priradenie celého vektora.
+    assign m_axis.TUSER = (m_axis_x_cnt == 0) && (m_axis_y_cnt == 0); // SOF
 
-    // Tieto počítadlá sledujú výstupný AXI stream (m_axis)
+    // Tieto počítadlá sledujú výstupný AXI stream
     always_ff @(posedge clk) begin
         if (!rstn) begin
             m_axis_x_cnt <= '0;
             m_axis_y_cnt <= '0;
-        end else if (m_axis_valid && m_axis_ready) begin // Len ak prebehne platný prenos na výstupe
-            // Horizontálne počítadlo
-            if (m_axis_last) begin // Ak sme na konci riadku
+        end else if (m_axis.TVALID && m_axis.TREADY) begin
+            if (m_axis.TLAST) begin
                 m_axis_x_cnt <= '0;
-                // Vertikálne počítadlo
-                if (m_axis_y_cnt == FRAME_HEIGHT - 1) begin // Ak sme na konci posledného riadku
-                    m_axis_y_cnt <= '0; // Reset pre nový snímok
+                if (m_axis_y_cnt == FRAME_HEIGHT - 1) begin
+                    m_axis_y_cnt <= '0;
                 end else begin
-                    m_axis_y_cnt <= m_axis_y_cnt + 1'b1; // Posun na ďalší riadok, odstránené $bits
+                    m_axis_y_cnt <= m_axis_y_cnt + 1'b1;
                 end
             end else begin
-                m_axis_x_cnt <= m_axis_x_cnt + 1'b1; // Posun na ďalší pixel, odstránené $bits
-                // m_axis_y_cnt sa nemení
+                m_axis_x_cnt <= m_axis_x_cnt + 1'b1;
             end
         end
     end
@@ -409,10 +376,10 @@ generate
     assign debug_led_0_o[6]   = swap_buffers_req;
     assign debug_led_0_o[7]   = first_frame_done;
 
-    assign debug_led_1_o[0] = s_axis_valid;
-    assign debug_led_1_o[1] = s_axis_ready;
-    assign debug_led_1_o[2] = m_axis_valid;
-    assign debug_led_1_o[3] = m_axis_ready;
+    assign debug_led_1_o[0] = s_axis.TVALID; // Použitie rozhrania
+    assign debug_led_1_o[1] = s_axis.TREADY; // Použitie rozhrania
+    assign debug_led_1_o[2] = m_axis.TVALID; // Použitie rozhrania
+    assign debug_led_1_o[3] = m_axis.TREADY; // Použitie rozhrania
     assign debug_led_1_o[4] = wr_cmd_valid;
     assign debug_led_1_o[5] = wr_cmd_ready;
     assign debug_led_1_o[6] = rd_cmd_valid;

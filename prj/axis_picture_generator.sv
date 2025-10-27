@@ -6,8 +6,22 @@
  * Podporuje rôzne režimy voliteľné vstupom `mode_i`.
  *
  * Zmeny:
- * - Odstránené použitie '$bits' pri inkrementácii pre lepšiu kompatibilitu.
- * - Opravená syntax '{0} na '0.
+ * - OPRAVA (Timing): Pridaný ŠTVRTÝ stupeň pipeline (S0->S1->S2->S3->S4).
+ * - OPRAVA (Timing v2): Nahradené pomalé operácie DELENIE (/) a MODULO (%)
+ * v kombinačnej logike medzi S1 a S2 za rýchle operácie NÁSOBENIA
+ * (s konštantou) a AND (bitová maska), aby sa vyriešil setup time violation.
+ * - OPRAVA (Logika v4 - Patch 1, 2, 3):
+ * 1. Opravená fixed-point konštanta pre 'COLOR_BARS' na 3276 (z 3277).
+ * 2. Opravený výber bitov pre 'DIAG_SCROLL' na nižšie (farebné) bity.
+ * 3. Opravený výber bitov pre 'GRADIENT' na rôzne bity pre R/G/B.
+ * - OPRAVA (Syntax v5 - Quartus Error 10170):
+ * 1. Odstránený bitový výber z výrazu v zátvorke (napr. (x >> 2)[9:4]).
+ * 2. Pridané dočasné premenné (napr. x_shifted_g) na uloženie
+ * posunutého výsledku pred vykonaním bitového výberu.
+ * - OPRAVA (Prenositeľnosť v6):
+ * 1. Nahradená statická konštanta 'C_RECIP_HRES_DIV8_Q18'
+ * funkciou 'calc_recip_div8_q18(H_RES)', ktorá počíta
+ * hodnotu dynamicky na základe parametra H_RES.
  *
  * @param H_RES          Horizontálne rozlíšenie (počet pixelov).
  * @param V_RES          Vertikálne rozlíšenie (počet riadkov).
@@ -48,24 +62,36 @@ module axis_picture_generator #(
     input  logic [$clog2(NUM_MODES)-1:0] mode_i,
 
     // --- AXI4-Stream výstup ---
-    // Použije 'master' modport z 'axi4s_if' definovaného v axi_interfaces.sv
     axi4s_if.master m_axis
 );
 
     // ---------------------------
     // Lokálne parametre a typy
     // ---------------------------
-    localparam int CLog2HRes = $clog2(H_RES); // Šírka pre X súradnicu
-    localparam int CLog2VRes = $clog2(V_RES); // Šírka pre Y súradnicu
-    localparam int CModeWidth = $clog2(NUM_MODES); // Šírka pre 'mode_i' a 'mode_q'
+    localparam int CLog2HRes = $clog2(H_RES);
+    localparam int CLog2VRes = $clog2(V_RES);
+    localparam int CModeWidth = $clog2(NUM_MODES);
 
-    // Veľkosti pre checkerboard vzory
-    localparam int CCheckerSizeSmall = 3; // Bit index (2^3 = 8 pixelov)
-    localparam int CCheckerSizeLarge = 5; // Bit index (2^5 = 32 pixelov)
-    // Šírka registra pre animáciu posunu
+    localparam int CCheckerSizeSmall = 3;
+    localparam int CCheckerSizeLarge = 5;
     localparam int CAnimWidth = 8;
 
-    // Enum pre režimy (lepšia čitateľnosť kódu)
+    // --- OPRAVA (Prenositeľnosť v6): Konštanty pre fixed-point násobenie ---
+
+    // Funkcia pre automatický výpočet Q18 konštanty pre (x * 8) / H_RES
+    // Vypočíta ((2^18) * 8 / H_RES) so správnym zaokrúhlením.
+    function automatic int calc_recip_div8_q18 (input int unsigned hres);
+        return ( (1 << 18) * 8 + (hres/2) ) / hres;
+    endfunction
+
+    // PATCH #1: Nahradenie statickej hodnoty dynamickým výpočtom
+    localparam int C_RECIP_HRES_DIV8_Q18 = calc_recip_div8_q18(H_RES);
+    localparam int C_Q_SHIFT = 18; // Shift pre Q18
+
+    // Pre MODE_MOVING_BAR: % 64
+    localparam int C_MOD_64_MASK = 6'h3F; // 6 bitov (0-63)
+    // --- Koniec opravy ---
+
     typedef enum logic [CModeWidth-1:0] {
         MODE_CHECKER_SMALL  = 3'd0,
         MODE_CHECKER_LARGE  = 3'd1,
@@ -77,14 +103,12 @@ module axis_picture_generator #(
         MODE_MOVING_BAR     = 3'd7
     } mode_e;
 
-    // Typ pre RGB565 farbu
     typedef struct packed {
       logic [4:0] red;
       logic [5:0] grn;
       logic [4:0] blu;
     } rgb565_t;
 
-    // Preddefinované farby
     localparam rgb565_t
         CColorBlack    = 16'h0000,
         CColorWhite    = 16'hFFFF,
@@ -93,11 +117,10 @@ module axis_picture_generator #(
         CColorBlue     = 16'h001F,
         CColorYellow   = 16'hFFE0,
         CColorCyan     = 16'h07FF,
-        CColorMagenta  = 16'hF81F, // Purple
+        CColorMagenta  = 16'hF81F,
         CColorOrange   = 16'hFC00,
         CColorDarkGray = 16'h8410;
 
-    // Paleta pre farebné pásy
     localparam rgb565_t CColorPalette [0:7] = '{
         CColorRed, CColorOrange, CColorYellow, CColorGreen,
         CColorCyan, CColorBlue, CColorMagenta, CColorWhite
@@ -106,31 +129,60 @@ module axis_picture_generator #(
     // ---------------------------
     // Interné signály a registre
     // ---------------------------
-    // Počítadlá súradníc
+
+    // --- Stupeň 0 (Počítadlá) ---
     logic [CLog2HRes-1:0] x_reg, x_next;
     logic [CLog2VRes-1:0] y_reg, y_next;
+    logic [CModeWidth-1:0] mode_q;
+    logic [CAnimWidth-1:0] scroll_offset;
 
-    // Riadiace signály
-    logic can_advance;         // Môže sa počítadlo posunúť? (TREADY je 1 alebo nie sme validní)
-    logic active_area_comb;    // Kombinačný signál: Sme v aktívnej oblasti obrazu?
-    logic start_of_frame_comb; // Kombinačný signál: Sme na začiatku snímku (0,0)?
-    logic end_of_line_comb;    // Kombinačný signál: Sme na konci riadku?
+    logic can_advance;
+    logic active_area_comb;
+    logic start_of_frame_comb;
+    logic end_of_line_comb;
 
-    // Výstupné AXI registre (pipeline stage)
-    logic                  tvalid_reg;
-    logic                  tlast_reg;
-    logic [USER_WIDTH-1:0] tuser_reg;
-    rgb565_t               pixel_data_reg; // Registrovaný pixel
+    // --- Stupeň 1 (Registre) ---
+    logic [CLog2HRes-1:0] x_s1_reg;
+    logic [CLog2VRes-1:0] y_s1_reg;
+    logic [CModeWidth-1:0] mode_q_s1_reg;
+    logic [CAnimWidth-1:0] scroll_offset_s1_reg;
+    logic    active_area_s1_reg;
+    logic    eol_s1_reg;
+    logic    sof_s1_reg;
 
-    // Register pre režim a animáciu
-    logic [CModeWidth-1:0] mode_q;        // Registrovaný vstup 'mode_i'
-    logic [CAnimWidth-1:0] scroll_offset; // Register pre posun animácie
+    // --- Stupeň 2 (Pomalé výpočty) ---
+    logic [3:0] bar_idx_comb_raw; // 4 bity pre detekciu pretečenia (>=8)
+    logic [CLog2HRes+CLog2VRes:0] sum_xy_comb;
+    logic bar_on_comb;
+    // Registre Stupňa 2
+    logic [2:0] bar_idx_s2_reg; // Finálny 3-bitový index
+    logic [CLog2HRes+CLog2VRes:0] sum_xy_s2_reg;
+    logic bar_on_s2_reg;
+    // Oneskorené signály (synchronizované so Stupňom 2)
+    logic [CLog2HRes-1:0] x_s2_reg;
+    logic [CLog2VRes-1:0] y_s2_reg;
+    logic [CModeWidth-1:0] mode_q_s2_reg;
+    logic    active_area_s2_reg;
+    logic    eol_s2_reg;
+    logic    sof_s2_reg;
 
-    // Kombinačný signál pre ďalší pixel
-    rgb565_t pixel_data_next;
+    // --- Stupeň 3 (Multiplexor) ---
+    rgb565_t pixel_data_s3_comb;
+    // Registre Stupňa 3
+    logic    active_area_s3_reg;
+    logic    eol_s3_reg;
+    logic    sof_s3_reg;
+    rgb565_t pixel_data_s3_reg;
+
+    // --- Stupeň 4 (Finálne výstupné registre) ---
+    logic                  tvalid_reg_out;
+    logic                  tlast_reg_out;
+    logic [USER_WIDTH-1:0] tuser_reg_out;
+    rgb565_t               pixel_data_reg_out;
+
 
     // ---------------------------
-    // Počítadlá súradníc (X, Y)
+    // Stupeň 0: Počítadlá súradníc (X, Y)
     // ---------------------------
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin
@@ -142,28 +194,23 @@ module axis_picture_generator #(
         end
     end
 
-    // Kombinačná logika pre výpočet ďalších súradníc
     always_comb begin
         x_next = x_reg;
         y_next = y_reg;
-        if (can_advance) begin // Posúvame sa len ak môžeme
-            if (x_reg == H_RES - 1) begin // Koniec riadku
-                x_next = '0;
-                y_next = (y_reg == V_RES - 1) ? '0 : y_reg + 1'b1; // Posun Y alebo reset Y
-            end else begin // V rámci riadku
-                x_next = x_reg + 1'b1; // Posun X
-                // y_next zostáva y_reg
-            end
+        if (x_reg == H_RES - 1) begin
+            x_next = '0;
+            y_next = (y_reg == V_RES - 1) ? '0 : y_reg + 1'b1;
+        end else begin
+            x_next = x_reg + 1'b1;
         end
     end
 
-    // Pomocné kombinačné signály pre polohu
-    assign active_area_comb    = (x_reg < H_RES) && (y_reg < V_RES); // Platné súradnice
-    assign start_of_frame_comb = (x_reg == 0) && (y_reg == 0);      // Pixel (0,0)
-    assign end_of_line_comb    = (x_reg == H_RES - 1);            // Posledný pixel v riadku
+    assign active_area_comb    = (x_reg < H_RES) && (y_reg < V_RES);
+    assign start_of_frame_comb = (x_reg == 0) && (y_reg == 0);
+    assign end_of_line_comb    = (x_reg == H_RES - 1);
 
     // ---------------------------
-    // Registre pre režim a animáciu
+    // Stupeň 0: Registre pre režim a animáciu
     // ---------------------------
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin
@@ -172,135 +219,209 @@ module axis_picture_generator #(
         end else if (can_advance) begin
             mode_q <= mode_i;
             if ((x_reg == H_RES - 1) && (y_reg == V_RES - 1)) begin
-                scroll_offset <= scroll_offset + 1'b1; // Odstránené $bits
+                scroll_offset <= scroll_offset + 1'b1;
             end
         end
     end
 
     // ---------------------------
-    // Pipeline registre pre AXI výstup
+    // Pipeline Stupeň 1: Registrácia vstupov pre pomalé výpočty
     // ---------------------------
-    // Tieto registre oneskorujú výstup o jeden takt, čo je bežné pre AXI stream.
-    // Dôležité: Vstupom do týchto registrov sú kombinačné signály (napr. active_area_comb).
-
     always_ff @(posedge clk_i) begin
         if (!rst_ni) begin
-            tvalid_reg     <= 1'b0;
-            tlast_reg      <= 1'b0;
-            tuser_reg      <= '0;
-            pixel_data_reg <= '0;
+            x_s1_reg           <= '0;
+            y_s1_reg           <= '0;
+            mode_q_s1_reg      <= '0;
+            scroll_offset_s1_reg <= '0;
+            active_area_s1_reg <= 1'b0;
+            eol_s1_reg         <= 1'b0;
+            sof_s1_reg         <= 1'b0;
         end else if (can_advance) begin
-            tvalid_reg     <= active_area_comb;
-            tlast_reg      <= end_of_line_comb && active_area_comb;
-            tuser_reg      <= {USER_WIDTH{start_of_frame_comb && active_area_comb}};
-            pixel_data_reg <= pixel_data_next;
+            x_s1_reg           <= x_reg;
+            y_s1_reg           <= y_reg;
+            mode_q_s1_reg      <= mode_q;
+            scroll_offset_s1_reg <= scroll_offset;
+            active_area_s1_reg <= active_area_comb;
+            eol_s1_reg         <= end_of_line_comb && active_area_comb;
+            sof_s1_reg         <= start_of_frame_comb && active_area_comb;
+        end
+    end
+
+    // ---------------------------
+    // Kombinačná logika pre pomalé operácie (Vstup do Stupňa 2)
+    // Používa signály zo Stupňa 1
+    // ---------------------------
+    always_comb begin
+        logic [CLog2HRes + C_Q_SHIFT - 1:0] bar_idx_product;
+        logic [CLog2HRes + CAnimWidth : 0] sum_mod_comb;
+
+        // 1. Farebné pruhy (Q18)
+        bar_idx_product = x_s1_reg * C_RECIP_HRES_DIV8_Q18; // Použitie dynamickej konštanty
+        bar_idx_comb_raw = 4'(bar_idx_product >> C_Q_SHIFT);
+
+        // 2. Pohyblivý pruh (Maska)
+        sum_mod_comb = x_s1_reg + scroll_offset_s1_reg;
+        bar_on_comb = (sum_mod_comb & C_MOD_64_MASK) < 16;
+
+        // 3. Diagonálny posuv (Sčítanie)
+        sum_xy_comb = x_s1_reg + y_s1_reg + scroll_offset_s1_reg;
+    end
+
+    // ---------------------------
+    // Pipeline Stupeň 2: Registrácia pomalých výpočtov a prenesenie signálov
+    // ---------------------------
+    always_ff @(posedge clk_i) begin
+        if (!rst_ni) begin
+            bar_idx_s2_reg <= '0;
+            sum_xy_s2_reg  <= '0;
+            bar_on_s2_reg  <= 1'b0;
+            x_s2_reg           <= '0;
+            y_s2_reg           <= '0;
+            mode_q_s2_reg      <= '0;
+            active_area_s2_reg <= 1'b0;
+            eol_s2_reg         <= 1'b0;
+            sof_s2_reg         <= 1'b0;
+        end else if (can_advance) begin
+            // Zachytenie VÝSLEDKOV pomalých výpočtov
+            // Saturácia indexu farebných pruhov
+            bar_idx_s2_reg <= (bar_idx_comb_raw >= 8) ? 3'd7 : 3'(bar_idx_comb_raw);
+            sum_xy_s2_reg  <= sum_xy_comb;
+            bar_on_s2_reg  <= bar_on_comb;
+            // Prenesenie oneskorených signálov (z S1)
+            x_s2_reg           <= x_s1_reg;
+            y_s2_reg           <= y_s1_reg;
+            mode_q_s2_reg      <= mode_q_s1_reg;
+            active_area_s2_reg <= active_area_s1_reg;
+            eol_s2_reg         <= eol_s1_reg;
+            sof_s2_reg         <= sof_s1_reg;
+        end
+    end
+
+    // ---------------------------
+    // Pipeline Stupeň 3: Kombinačný MUX (teraz rýchly)
+    // Používa signály zo Stupňa 2
+    // ---------------------------
+    always_comb begin
+        pixel_data_s3_comb = CColorBlack;
+
+        if (active_area_s2_reg) begin
+            unique case (mode_e'(mode_q_s2_reg))
+
+                MODE_CHECKER_SMALL: begin
+                    pixel_data_s3_comb = (x_s2_reg[CCheckerSizeSmall] ^ y_s2_reg[CCheckerSizeSmall]) ? CColorWhite : CColorBlack;
+                end
+
+                MODE_CHECKER_LARGE: begin
+                    pixel_data_s3_comb = (x_s2_reg[CCheckerSizeLarge] ^ y_s2_reg[CCheckerSizeLarge]) ? CColorBlue : CColorYellow;
+                end
+
+                MODE_COLOR_BARS: begin
+                    pixel_data_s3_comb = CColorPalette[bar_idx_s2_reg];
+                end
+
+                MODE_CROSSHAIR: begin
+                    logic is_vert_line, is_horiz_line;
+                    logic [CLog2HRes-1:0] center_x;
+                    logic [CLog2VRes-1:0] center_y;
+                    center_x = H_RES >> 1;
+                    center_y = V_RES >> 1;
+                    is_vert_line = (x_s2_reg >= center_x - 1) && (x_s2_reg <= center_x + 1);
+                    is_horiz_line = (y_s2_reg >= center_y - 1) && (y_s2_reg <= center_y + 1);
+                    pixel_data_s3_comb = (is_vert_line || is_horiz_line) ? CColorWhite : CColorBlue;
+                end
+
+                // --- OPRAVA (Logika v4 - Patch 3) ---
+                MODE_H_GRADIENT: begin
+                    logic [CLog2HRes-1:0] x_shifted_g, x_shifted_b;
+                    pixel_data_s3_comb.red =  x_s2_reg[9:5];
+
+                    x_shifted_g = x_s2_reg >> 2;
+                    pixel_data_s3_comb.grn = x_shifted_g[9:4];
+
+                    x_shifted_b = x_s2_reg >> 4;
+                    pixel_data_s3_comb.blu = x_shifted_b[9:5];
+                end
+
+                MODE_V_GRADIENT: begin
+                    logic [CLog2VRes-1:0] y_shifted_g, y_shifted_b;
+                    pixel_data_s3_comb.red =  y_s2_reg[8:4];
+
+                    y_shifted_g = y_s2_reg >> 2;
+                    pixel_data_s3_comb.grn = y_shifted_g[8:3];
+
+                    y_shifted_b = y_s2_reg >> 3;
+                    pixel_data_s3_comb.blu = y_shifted_b[8:4];
+                end
+                // --- Koniec opravy ---
+
+                // --- OPRAVA (Logika v4 - Patch 2) ---
+                MODE_DIAG_SCROLL: begin
+                    pixel_data_s3_comb.red = sum_xy_s2_reg[4 +: 5];
+                    pixel_data_s3_comb.grn = sum_xy_s2_reg[3 +: 6];
+                    pixel_data_s3_comb.blu = sum_xy_s2_reg[2 +: 5];
+                end
+                // --- Koniec opravy ---
+
+                MODE_MOVING_BAR: begin
+                    pixel_data_s3_comb = bar_on_s2_reg ? CColorRed : CColorBlack;
+                end
+
+                default:
+                   pixel_data_s3_comb = CColorOrange;
+            endcase
+        end
+    end
+
+    // ---------------------------
+    // Pipeline Stupeň 3: Registrácia MUX výstupu
+    // ---------------------------
+    always_ff @(posedge clk_i) begin
+        if (!rst_ni) begin
+            active_area_s3_reg <= 1'b0;
+            eol_s3_reg         <= 1'b0;
+            sof_s3_reg         <= 1'b0;
+            pixel_data_s3_reg  <= '0;
+        end else if (can_advance) begin
+            active_area_s3_reg <= active_area_s2_reg;
+            eol_s3_reg         <= eol_s2_reg;
+            sof_s3_reg         <= sof_s2_reg;
+            pixel_data_s3_reg  <= pixel_data_s3_comb;
+        end
+    end
+
+    // ---------------------------
+    // Pipeline Stupeň 4: Finálne výstupné registre
+    // ---------------------------
+    always_ff @(posedge clk_i) begin
+        if (!rst_ni) begin
+            tvalid_reg_out     <= 1'b0;
+            tlast_reg_out      <= 1'b0;
+            tuser_reg_out      <= '0;
+            pixel_data_reg_out <= '0;
+        end else if (can_advance) begin
+            tvalid_reg_out     <= active_area_s3_reg;
+            tlast_reg_out      <= eol_s3_reg;
+            tuser_reg_out      <= {USER_WIDTH{sof_s3_reg}};
+            pixel_data_reg_out <= pixel_data_s3_reg;
         end
     end
 
     // ---------------------------
     // Riadenie toku (Handshake)
     // ---------------------------
-    // Môžeme posunúť počítadlá a pipeline, ak je downstream modul pripravený (TREADY=1)
-    // alebo ak aktuálne nevysielame platné dáta (TVALID=0).
-    assign can_advance = m_axis.TREADY || !tvalid_reg;
-
-    // ---------------------------
-    // Kombinačná logika: Generovanie pixelových dát
-    // ---------------------------
-    always_comb begin
-        // Prednastavenie na čiernu (pre blanking intervaly)
-        pixel_data_next = CColorBlack;
-
-        if (active_area_comb) begin // Generujeme farbu len pre aktívnu oblasť
-            unique case (mode_e'(mode_q)) // Použijeme registrovaný režim 'mode_q'
-
-                // --- Malý checkerboard (8x8) ---
-                MODE_CHECKER_SMALL: begin
-                    pixel_data_next = (x_reg[CCheckerSizeSmall] ^ y_reg[CCheckerSizeSmall]) ? CColorWhite : CColorBlack;
-                end
-
-                // --- Veľký checkerboard (32x32) ---
-                MODE_CHECKER_LARGE: begin
-                    pixel_data_next = (x_reg[CCheckerSizeLarge] ^ y_reg[CCheckerSizeLarge]) ? CColorBlue : CColorYellow;
-                end
-
-                // --- Farebné pásy (vertikálne) ---
-                MODE_COLOR_BARS: begin
-                    logic [2:0] bar_idx;
-                    // Rozdelí šírku obrazovky na 8 rovnakých pásov
-                    bar_idx = 3'((x_reg * 8) / H_RES);
-                    pixel_data_next = CColorPalette[bar_idx];
-                end
-
-                // --- Kríž v strede ---
-                MODE_CROSSHAIR: begin
-                    logic is_vert_line, is_horiz_line;
-                    logic [CLog2HRes-1:0] center_x;
-                    logic [CLog2VRes-1:0] center_y;
-                    center_x = H_RES >> 1; // Stred X
-                    center_y = V_RES >> 1; // Stred Y
-                    // Vertikálna čiara (3 pixely široká)
-                    is_vert_line = (x_reg >= center_x - 1) && (x_reg <= center_x + 1);
-                    // Horizontálna čiara (3 pixely široká)
-                    is_horiz_line = (y_reg >= center_y - 1) && (y_reg <= center_y + 1);
-                    pixel_data_next = (is_vert_line || is_horiz_line) ? CColorWhite : CColorBlue;
-                end
-
-                // --- Horizontálny gradient ---
-                MODE_H_GRADIENT: begin
-                    // Použijeme horné bity X súradnice pre farby
-                    pixel_data_next.red = x_reg[CLog2HRes-1 : CLog2HRes-5]; // 5 bitov
-                    pixel_data_next.grn = x_reg[CLog2HRes-1 : CLog2HRes-6]; // 6 bitov
-                    pixel_data_next.blu = x_reg[CLog2HRes-1 : CLog2HRes-5]; // 5 bitov
-                end
-
-                // --- Vertikálny gradient ---
-                MODE_V_GRADIENT: begin
-                    // Použijeme horné bity Y súradnice pre farby
-                    pixel_data_next.red = y_reg[CLog2VRes-1 : CLog2VRes-5]; // 5 bitov
-                    pixel_data_next.grn = y_reg[CLog2VRes-1 : CLog2VRes-6]; // 6 bitov
-                    pixel_data_next.blu = y_reg[CLog2VRes-1 : CLog2VRes-5]; // 5 bitov
-                end
-
-                // --- Diagonálny posuv (animovaný) ---
-                MODE_DIAG_SCROLL: begin
-                    logic [CLog2HRes+CLog2VRes:0] sum_xy; // Šírka dostatočná pre x+y+offset
-                    sum_xy = x_reg + y_reg + scroll_offset; // Posúva sa diagonálne
-                    // Použijeme bity zo súčtu pre farby
-                    pixel_data_next.red = sum_xy[CAnimWidth+4 : CAnimWidth];   // 5 bitov
-                    pixel_data_next.grn = sum_xy[CAnimWidth+5 : CAnimWidth];   // 6 bitov
-                    pixel_data_next.blu = sum_xy[CAnimWidth+4 : CAnimWidth];   // 5 bitov
-                end
-
-                // --- Pohyblivý vertikálny pruh (animovaný) ---
-                MODE_MOVING_BAR: begin
-                    logic bar_on;
-                    // Vytvorí pruh široký 16 pixelov, ktorý sa posúva každých 64 pixelov
-                    bar_on = ((x_reg + scroll_offset) % 64) < 16;
-                    pixel_data_next = bar_on ? CColorRed : CColorBlack;
-                end
-
-                // --- Predvolený režim (ak by nastala chyba) ---
-                default: begin
-                   pixel_data_next = CColorOrange; // Oranžová ako indikátor chyby
-                end
-            endcase
-        end
-    end
+    assign can_advance = m_axis.TREADY || !tvalid_reg_out;
 
     // ---------------------------
     // Výstupy AXI4-Stream
     // ---------------------------
-    // Pripojíme výstupy z pipeline registrov
-    assign m_axis.TVALID = tvalid_reg;
-    assign m_axis.TDATA  = pixel_data_reg; // Dáta sú z registra
-    assign m_axis.TLAST  = tlast_reg;
-    assign m_axis.TUSER  = tuser_reg;
+    assign m_axis.TVALID = tvalid_reg_out;
+    assign m_axis.TDATA  = pixel_data_reg_out;
+    assign m_axis.TLAST  = tlast_reg_out;
+    assign m_axis.TUSER  = tuser_reg_out;
 
-    // Voliteľné signály (nastavené na konštantné hodnoty, ak sú povolené)
-    assign m_axis.TKEEP  = (KEEP_WIDTH > 0) ? {KEEP_WIDTH{1'b1}} : '0; // Vždy platné všetky bajty
-    assign m_axis.TID    = (ID_WIDTH > 0)   ? {ID_WIDTH{1'b0}}   : '0; // ID = 0
-    assign m_axis.TDEST  = (DEST_WIDTH > 0) ? {DEST_WIDTH{1'b0}} : '0; // DEST = 0
+    assign m_axis.TKEEP  = (KEEP_WIDTH > 0) ? {KEEP_WIDTH{1'b1}} : '0;
+    assign m_axis.TID    = (ID_WIDTH > 0)   ? {ID_WIDTH{1'b0}}   : '0;
+    assign m_axis.TDEST  = (DEST_WIDTH > 0) ? {DEST_WIDTH{1'b0}} : '0;
 
 endmodule
 
