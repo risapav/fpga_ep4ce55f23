@@ -1,16 +1,16 @@
 // ===================================================================================
 // Názov súboru: top.sv
-// Verzia: 4.26 - Rozšírená diagnostika pointerov na LED_J10/J11
-// Dátum: 26. október 2025
+// Verzia: 4.29 - Párová LED diagnostika (J10 / ~J10)
+// Dátum: 28. október 2025
 //
 // Popis:
-// Top-level modul s dočasne zakomentovaným framebufferom
-// pre priame testovanie axis_picture_generator -> axis_cdc_fifo -> axis_to_vga.
+// Top-level modul s plne zapojenou pipeline (Generátor -> FB -> FIFO -> VGA)
+// pre ladenie 'framebuffer_ctrl' v režime 'NORMAL'.
 //
-// Zmeny vo verzii 4.10:
-// - Pripojené celé Gray pointery (spodných 8b) z CDC FIFO
-//   na LED diódy LED_J10 a LED_J11 pre detailnú diagnostiku.
-// - Upravené priradenie LED[5:0].
+// Zmeny vo verzii 4.29:
+// - Obnovená diagnostika LED[5:0] pre AXI handshake.
+// - Implementovaná párová diagnostika na LED_J10 (FB_Stav) a
+//   LED_J11 (~FB_Stav) pre lepšiu vizuálnu kontrolu.
 // ===================================================================================
 
 `default_nettype none
@@ -59,11 +59,18 @@ module top (
     localparam int CPixelClockHz = get_pixel_clock(CVgaMode);
     localparam int CAxiClockHz = 100_000_000;
 
+    // Interný DQM signál
+    logic [sdram_pkg::DATA_WIDTH/8-1:0] sdram_dqm_internal;
+    // Pripojenie DQM (spojenie UDQM a LDQM do jedného vektora)
+    assign {SDRAM_UDQM, SDRAM_LDQM} = sdram_dqm_internal;
+
+
     // ==========================================================================
     // ==                        HODINY A RESETY (SPOLOČNÉ)                      ==
     // ==========================================================================
     logic clk_0, clk_1, clk_2, clk_3;
-    logic pll_locked, rstn_global, rstn_sync_0, rstn_sync_1, rstn_sync_2, rstn_sync_3;
+    logic pll_locked, rstn_global;
+    logic rstn_sync_0, rstn_sync_1, rstn_sync_2, rstn_sync_3;
 
     // POZNÁMKA: Predpokladá sa existencia modulu 'ClkPll'
     ClkPll clkpll_inst (
@@ -75,22 +82,26 @@ module top (
 
     assign rstn_global = RESET_N & pll_locked;
 
-    cdc_reset_synchronizer reset_sync_inst0 (
+    cdc_reset_synchronizer #( .WIDTH(1), .STAGES(2), .REGISTERED_OUT(1) ) reset_sync_inst0 (
       .clk_i(clk_0), .rst_ni(rstn_global), .rst_no(rstn_sync_0)
       );
-    cdc_reset_synchronizer reset_sync_inst1 (
+    cdc_reset_synchronizer #( .WIDTH(1), .STAGES(2), .REGISTERED_OUT(1) ) reset_sync_inst1 (
       .clk_i(clk_1), .rst_ni(rstn_global), .rst_no(rstn_sync_1)
       );
-    cdc_reset_synchronizer reset_sync_inst2 (
+    cdc_reset_synchronizer #( .WIDTH(1), .STAGES(2), .REGISTERED_OUT(1) ) reset_sync_inst2 (
       .clk_i(clk_2), .rst_ni(rstn_global), .rst_no(rstn_sync_2)
       );
-    cdc_reset_synchronizer reset_sync_inst3 (
+    cdc_reset_synchronizer #( .WIDTH(1), .STAGES(2), .REGISTERED_OUT(1) ) reset_sync_inst3 (
       .clk_i(clk_3), .rst_ni(rstn_global), .rst_no(rstn_sync_3)
       );
 
     // ==========================================================================
     // ==                        VIDEO PIPELINE S FRAMEBUFFEROM                 ==
     // ==========================================================================
+    // Tento blok sa v tejto verzii nepoužíva, ale je tu ponechaný,
+    // ak by sme chceli v budúcnosti implementovať podmienenú kompiláciu.
+    // generate
+    //     if (CTestMode == MODE_VIDEO_PIPELINE) begin : gen_video_pipeline
 
     // --- VGA Parametre (načítané z vga_pkg) ---
     localparam int CHAct = get_h_res(CVgaMode);
@@ -108,19 +119,19 @@ module top (
     // Generátor -> Framebuffer (clk_2)
     axi4s_if #(
       .DATA_WIDTH(axi_pkg::AXI_TDATA_WIDTH),
-      .USER_WIDTH(axi_pkg::AXI_TUSER_WIDTH)
+      .USER_WIDTH(axi_pkg::AXI_TUSER_WIDTH )
       ) gen_to_fb_if (.ACLK(clk_2), .ARESETn(rstn_sync_2));
 
     // Framebuffer -> CDC FIFO (clk_2)
     axi4s_if #(
       .DATA_WIDTH(axi_pkg::AXI_TDATA_WIDTH),
-      .USER_WIDTH(axi_pkg::AXI_TUSER_WIDTH)
+      .USER_WIDTH(axi_pkg::AXI_TUSER_WIDTH )
       ) fb_to_fifo_if (.ACLK(clk_2), .ARESETn(rstn_sync_2));
 
     // CDC FIFO -> VGA (clk_0)
     axi4s_if #(
       .DATA_WIDTH(axi_pkg::AXI_TDATA_WIDTH),
-      .USER_WIDTH(axi_pkg::AXI_TUSER_WIDTH)
+      .USER_WIDTH(axi_pkg::AXI_TUSER_WIDTH )
       ) fifo_to_vga_if (.ACLK(clk_0), .ARESETn(rstn_sync_0));
 
     // --- Signály pre VGA a Diagnostiku ---
@@ -128,12 +139,16 @@ module top (
     localparam int CPtrWidth      = CFifoDepthBits + 1;
 
     rgb565_t vga_rgb;
-    logic vga_hde, vga_underrun;
+    logic vga_hde;
+    // logic vga_underrun; // Odstránený, keďže axis_to_vga ho už neposkytuje
     logic cdc_wr_overflow, cdc_rd_underflow;
     logic cdc_internal_rd_empty, cdc_internal_wr_full;
     // Signály pre celé pointery
     logic [CPtrWidth-1:0] local_wr_ptr_gray, local_rd_ptr_gray;
     logic [CPtrWidth-1:0] sync_wr_ptr_gray, sync_rd_ptr_gray;
+    // NOVÉ: Interné signály pre pripojenie FB debug výstupov
+    logic [7:0] fb_debug_0_internal;
+    logic [7:0] fb_debug_1_internal;
 
     // --- Inštancia 1: Generátor Obrázkov ---
     axis_picture_generator #(
@@ -142,26 +157,21 @@ module top (
       ) u_axis_picture_generator (
         .clk_i(clk_2),
         .rst_ni(rstn_sync_2),
-        .mode_i(BSW[2:0]),
-        .m_axis(gen_to_fb_if)
+        .mode_i(BSW[2:0]), // Späť na BSW
+        .m_axis(gen_to_fb_if) // Výstup do FB
         );
 
     // --- Inštancia 2: Framebuffer Kontrolér ---
     framebuffer_ctrl #(
       .FRAME_WIDTH(CHAct),
       .FRAME_HEIGHT(CVAct),
-      .C_OP_MODE(framebuffer_pkg::NORMAL) // Použitie typu z balíčka
+      .C_OP_MODE(framebuffer_pkg::NORMAL) // Späť na NORMAL
       ) u_framebuffer (
-        // Pripojenie explicitných hodín a resetu
-        .clk(clk_2),        // Pripojenie AXI hodín
-        .clk_sh(clk_3),     // Pripojenie posunutých hodín
-        .rstn(rstn_sync_2), // Pripojenie AXI resetu
-
-        // Pripojenie celých AXI rozhraní
-        .s_axis(gen_to_fb_if),  // Vstup z Generátora
-        .m_axis(fb_to_fifo_if), // Výstup do FIFO
-
-        // SDRAM rozhranie
+        .clk(clk_2),
+        .clk_sh(clk_3),
+        .rstn(rstn_sync_2),
+        .s_axis(gen_to_fb_if), // Pripojenie celého rozhrania
+        .m_axis(fb_to_fifo_if), // Pripojenie celého rozhrania
         .sdram_dq(SDRAM_DQ),
         .sdram_addr(SDRAM_ADDR),
         .sdram_ba(SDRAM_BA),
@@ -171,40 +181,37 @@ module top (
         .sdram_cs_n(SDRAM_CS_N),
         .sdram_we_n(SDRAM_WE_N),
         .sdram_ras_n(SDRAM_RAS_N),
-        .sdram_dqm({SDRAM_UDQM, SDRAM_LDQM}),
-        // Diagnostika
-        .debug_led_0_o(LED_J10),
-        .debug_led_1_o(LED_J11)
+        .sdram_dqm(sdram_dqm_internal), // Pripojenie interného DQM
+        .debug_led_0_o(fb_debug_0_internal),
+        .debug_led_1_o(fb_debug_1_internal)
     );
-
 
     // --- Inštancia 3: AXI Clock Domain Crossing (CDC) FIFO ---
     axis_cdc_fifo #(
         .DATA_WIDTH     ( axi_pkg::AXI_TDATA_WIDTH ),
-        .USER_WIDTH     ( axi_pkg::AXI_TUSER_WIDTH ),
+        .USER_WIDTH     ( axi_pkg::AXI_TUSER_WIDTH  ),
         .FIFO_DEPTH_BITS( CFifoDepthBits )
     ) u_axis_cdc_fifo (
       .s_clk_i(clk_2),
       .s_rst_ni(rstn_sync_2),
-      .s_axis(fb_to_fifo_if),
+      .s_axis(fb_to_fifo_if), // Vstup z FB
 
       .m_clk_i(clk_0),
       .m_rst_ni(rstn_sync_0),
-      .m_axis(fifo_to_vga_if),
+      .m_axis(fifo_to_vga_if), // Výstup do VGA
 
       .level_o(),
       .wr_overflow_o(cdc_wr_overflow),
       .rd_underflow_o(cdc_rd_underflow),
       .internal_rd_empty_o(cdc_internal_rd_empty),
       .internal_wr_full_o(cdc_internal_wr_full),
-      // Pripojenie celých pointerov
       .local_wr_ptr_gray_o(local_wr_ptr_gray),
       .local_rd_ptr_gray_o(local_rd_ptr_gray),
       .sync_wr_ptr_gray_o (sync_wr_ptr_gray),
       .sync_rd_ptr_gray_o (sync_rd_ptr_gray)
     );
 
-    // --- Inštancia 4: AXI-Stream na VGA Prevodník ---
+    // --- Inštancia 4: AXI-Stream na VGA Prevodník (Zjednodušený) ---
     axis_to_vga #(
       .H_ACT ( CHAct ),
       .H_FP  ( CHFp ),
@@ -222,12 +229,11 @@ module top (
       ) u_axis_to_vga (
         .clk_i(clk_0),
         .rst_ni(rstn_sync_0),
-        .s_axis(fifo_to_vga_if),
-        .vga_color_o(vga_rgb),
+        .s_axis(fifo_to_vga_if), // Vstup z CDC FIFO
+        .vga_color_o(vga_rgb), // Pripojenie na vga_rgb
         .vga_hs_o(VGA_HS),
         .vga_vs_o(VGA_VS),
         .hde_o(vga_hde)
-
     );
 
     // --- Výstupy ---
@@ -235,6 +241,19 @@ module top (
     assign VGA_G = vga_rgb.grn;
     assign VGA_B = vga_rgb.blu;
 
+    // --- NOVÁ PÁROVÁ DIAGNOSTIKA (v4.29) ---
+    assign LED[0] = fb_to_fifo_if.TVALID;  // Výstup z FB: VALID
+    assign LED[1] = fb_to_fifo_if.TREADY;  // Vstup do FIFO: READY
+    assign LED[2] = fifo_to_vga_if.TVALID;  // Výstup z FIFO: VALID
+    assign LED[3] = ~LED[0];                // Negácia FB TVALID
+    assign LED[4] = ~LED[1];                // Negácia FIFO TREADY In
+    assign LED[5] = ~LED[2];                // Negácia FIFO TVALID Out
+
+    // Párová diagnostika pre stav FB
+    assign LED_J10 = fb_debug_0_internal;   // Stav FB (BUF_A, BUF_B, ptrs, swap)
+    assign LED_J11 = ~fb_debug_0_internal;  // Negovaný stav FB
+
 endmodule
 
 `default_nettype wire
+

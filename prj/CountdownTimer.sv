@@ -5,11 +5,10 @@
  * od načítanej hodnoty (`load_val`) až po nulu. Keď dosiahne nulu,
  * aktivuje výstup `done`.
  *
- * Zmeny:
- * - Odstránené použitie '$bits' pri dekrementácii pre lepšiu kompatibilitu.
- * - Pridaný `ifndef` guard.
- * - Detailnejšie komentáre.
- * - Opravená syntax '{0} na '0.
+ * Zmeny v v1.2:
+ * - OPRAVA (Deadlock): Logika 'done_next' je teraz aktívna, len ak
+ * 'count_reg == 0' A ZÁROVEŇ 'load == 0'. Tým sa zabráni
+ * falošnému signálu 'done' počas resetu/nabíjania.
  *
  * @param COUNT_WIDTH     Šírka počítadla (určuje maximálnu hodnotu odpočtu).
  * @param DONE_REGISTERED Výstup `done` (1 = registrovaný, 0 = kombinačný).
@@ -32,19 +31,18 @@ module CountdownTimer #(
 );
 
     // Interné registre a signály
-    logic [COUNT_WIDTH-1:0] count_reg;  // Register držiaci aktuálnu hodnotu počítadla
-    logic [COUNT_WIDTH-1:0] count_next; // Kombinačná logika pre ďalšiu hodnotu
-    logic                   done_next;  // Kombinačná logika pre výstup 'done'
+    logic [COUNT_WIDTH-1:0] count_reg;
+    logic [COUNT_WIDTH-1:0] count_next;
+    logic                   done_next;
 
     // -----------------------------------------------------
-    // Register počítadla (s podporou synch/asynch resetu)
+    // Register počítadla
     // -----------------------------------------------------
-    // Synchrónny reset: reaguje na rstn len pri hrane hodín
     always_ff @(posedge clk) begin
         if (!rstn)
-            count_reg <= '0; // Reset na 0
+            count_reg <= '0;
         else
-            count_reg <= count_next; // Inak preklopí ďalšiu hodnotu
+            count_reg <= count_next;
     end
 
     // -----------------------------------------------------
@@ -53,15 +51,15 @@ module CountdownTimer #(
     always_comb begin
         // Výpočet ďalšej hodnoty počítadla
         if (load) begin
-            count_next = load_val; // Ak je 'load' aktívny, načítame novú hodnotu
-        end else if (count_reg > 0) begin // Kontrola '!='0 je bezpečnejšia ako '>'0
-            count_next = count_reg - 1'b1; // Ak nie sme na 0, odpočítame 1 (Odstránené $bits)
+            count_next = load_val;
+        end else if (count_reg > 0) begin
+            count_next = count_reg - 1'b1;
         end else begin
-            count_next = count_reg; // Ak sme na 0 (alebo pri resete), zostaneme na 0
+            count_next = count_reg;
         end
 
-        // Výpočet výstupu 'done'
-        done_next = (count_reg == 0); // 'done' je aktívny, keď počítadlo dosiahne 0
+        // OPRAVA (v1.2): 'done' je aktívny, len ak sme na 0 A NENABÍJAME
+        done_next = (count_reg == 0) && !load;
     end
 
     // -----------------------------------------------------
@@ -69,27 +67,25 @@ module CountdownTimer #(
     // -----------------------------------------------------
     generate
         if (DONE_REGISTERED) begin : g_done_reg_block
-            logic done_reg; // Interný register pre 'done'
+            logic done_reg;
 
-            // Registrovaný výstup (pridáva 1 takt latencie)
             always_ff @(posedge clk) begin
                 if (!rstn)
-                    done_reg <= 1'b0; // Reset na 0
+                    done_reg <= 1'b0;
                 else
-                    done_reg <= done_next; // Preklopí vypočítanú hodnotu
+                    done_reg <= done_next;
             end
 
-            assign done = done_reg; // Priradenie registrovaného signálu na výstup
+            assign done = done_reg;
 
         end else begin : g_done_comb_block
-            // Kombinačný výstup (rýchlejší, ale môže byť horší pre časovanie)
-            assign done = done_next; // Priame priradenie kombinačného signálu
+            assign done = done_next;
         end
     endgenerate
 
 endmodule
 
-`default_nettype wire // Obnovenie predvoleného typu siete
+`default_nettype wire
 
 `endif // COUNTDOWN_TIMER_SV
 

@@ -2,33 +2,19 @@
  * @file        SdramController.sv
  * @brief       Hlavný kontrolér pre SDRAM pamäť.
  * @details     Tento modul implementuje kompletný konečný stavový automat (FSM)
- * na riadenie SDRAM pamäte. Zvláda inicializáciu, časovanie,
- * refresh, riadenie bánk (bank management), auto-precharge
- * a spracovanie požiadaviek na čítanie a zápis.
- * Komunikuje s externým svetom cez FIFO buffre pre príkazy
- * a dáta, čím oddeľuje logiku riadenia pamäte od logiky
- * aplikácie (napr. framebuffer).
+ * na riadenie SDRAM pamäte.
  *
- * Zmeny v tejto verzii:
- * - Odstránené použitie '$bits' pre potenciálnu lepšiu kompatibilitu s Quartus.
- * - Zjednodušený výpočet localparam 'CMrsValueAddr'.
- * - Dôsledné použitie scope 'sdram_pkg::' pre importované typy/parametre.
- * - Opravená šírka portov 'rdata_level' a 'wdata_level'.
- * - Opravené odkazy na premenované localparam.
- * - Aplikované formátovanie.
+ * Zmeny v tejto verzii (v2.3 - Oprava časovačov):
+ * - OPRAVA (Deadlock): Vrátený parameter '.DONE_REGISTERED(1)'
+ * do VŠETKÝCH inštancií 'CountdownTimer', aby zodpovedali
+ * definícii 'CountdownTimer.sv' (v1.1) a zabezpečili
+ * správnu (registrovanú) funkciu 'done' signálu pre FSM.
  *
  * Závislosti:
- * - sdram_pkg.sv:     Obsahuje definície typov (sdram_cmd_t, sdram_addr_t) a parametre.
- * - CountdownTimer.sv: Pomocný modul pre časovače.
- * - AsyncFifoGeneric.sv: Pomocný modul pre dátové FIFO buffre.
+ * - sdram_pkg.sv (v2)
+ * - CountdownTimer.sv (v1.1 - s DONE_REGISTERED)
+ * - AsyncFifoGeneric.sv (v1.9)
  *
- * @param CTrp           Časovanie: Precharge to Active Command Period
- * @param CTrcd          Časovanie: Active to Read/Write Command Delay Time
- * @param CTwr           Časovanie: Write Recovery Time
- * @param CTrfc          Časovanie: Refresh Cycle Time
- * @param CTras          Časovanie: Active to Precharge Command Period
- * @param CTmrd          Časovanie: Mode Register Set Delay
- * @param CClockFreqHz   Frekvencia hlavných hodín (clk) v Hz.
  * @param CFifoAddrWidth Šírka adresy pre interné dátové FIFO buffre.
  */
 
@@ -37,47 +23,28 @@
 
 `default_nettype none
 
-import sdram_pkg::*; // Importujeme typy a parametre z balíčka
+import sdram_pkg::*; // Importujeme typy a VŠETKY parametre z balíčka
 
 module SdramController #(
-    // --- Parametre časovania (v cykloch 'clk') ---
-    parameter int CTrp   = 3,
-    parameter int CTrcd  = 3,
-    parameter int CTwr   = 2,
-    parameter int CTrfc  = 7,
-    parameter int CTras  = 7,
-    parameter int CTmrd  = 2,
-
-    // --- Parametre systému a FIFO ---
-    parameter int CClockFreqHz   = 100_000_000,
     parameter int CFifoAddrWidth = 6
 )(
-    // --- Systémové signály ---
     input  logic clk,
     input  logic clk_sh,
     input  logic rstn,
-
-    // --- Rozhranie pre príkazy ---
-    input  sdram_pkg::sdram_cmd_t wr_cmd_data, // Použitie scope
+    input  sdram_pkg::sdram_cmd_t wr_cmd_data,
     input  logic                  wr_cmd_valid,
     output logic                  wr_cmd_ready,
-    input  sdram_pkg::sdram_cmd_t rd_cmd_data, // Použitie scope
+    input  sdram_pkg::sdram_cmd_t rd_cmd_data,
     input  logic                  rd_cmd_valid,
     output logic                  rd_cmd_ready,
-
-    // --- Rozhranie pre dáta na zápis ---
     input  logic [sdram_pkg::DATA_WIDTH-1:0] wdata,
     input  logic                             wdata_valid,
     output logic                             wdata_ready,
-    output logic [CFifoAddrWidth:0]          wdata_level, // Opravená šírka
-
-    // --- Rozhranie pre prečítané dáta ---
+    output logic [CFifoAddrWidth:0]          wdata_level,
     output logic [sdram_pkg::DATA_WIDTH-1:0] rdata,
     output logic                             rdata_valid,
     input  logic                             rdata_ready,
-    output logic [CFifoAddrWidth:0]          rdata_level, // Opravená šírka
-
-    // --- Fyzické piny SDRAM ---
+    output logic [CFifoAddrWidth:0]          rdata_level,
     output logic [sdram_pkg::ROW_ADDR_WIDTH-1:0]  sdram_addr,
     output logic [sdram_pkg::BANK_ADDR_WIDTH-1:0] sdram_ba,
     output logic                                 sdram_cs_n,
@@ -87,44 +54,24 @@ module SdramController #(
     inout  wire  [sdram_pkg::DATA_WIDTH-1:0]     sdram_dq,
     output logic [sdram_pkg::DATA_WIDTH/8-1:0]   sdram_dqm,
     output logic                                 sdram_cke,
-    output logic                                 sdram_clk
+    output logic                                 sdram_clk,
+    output logic busy_o,
+    output logic [1:0] fifo_error_o
 );
-
-    // --- Lokálne konštanty odvodené z parametrov ---
-    localparam int CNsPerSec       = 1_000_000_000;
-    localparam int CClkPeriodNs    = (CNsPerSec + CClockFreqHz - 1) / CClockFreqHz; // Zaokrúhlenie nahor
-    localparam int CWaitTimeNs     = 200_000;
-    localparam int CInitWaitCycles = (CWaitTimeNs + CClkPeriodNs - 1) / CClkPeriodNs; // Zaokrúhlenie nahor
-
-    localparam int CRefreshIntervalNs = 64_000_000 / (1 << sdram_pkg::ROW_ADDR_WIDTH);
-    localparam int CRefreshInterval = CRefreshIntervalNs / CClkPeriodNs; // Zaokrúhlenie nadol
 
     localparam int CApBitIndex     = 10;
     localparam int CNumBanks       = 1 << sdram_pkg::BANK_ADDR_WIDTH;
 
-    // Zjednodušený výpočet pre CMrsValueAddr
-    localparam logic [2:0] CMrsCasValue = (sdram_pkg::CAS_LATENCY == 3) ? 3'b011 :
-                                          (sdram_pkg::CAS_LATENCY == 2) ? 3'b010 :
-                                                                          3'b011; // Fallback
-    localparam logic [2:0] CMrsBurstLenValue = (sdram_pkg::BURST_LEN == 8) ? 3'b011 :
-                                              (sdram_pkg::BURST_LEN == 4) ? 3'b010 :
-                                              (sdram_pkg::BURST_LEN == 2) ? 3'b001 :
-                                                                            3'b000; // 1
-    localparam logic [sdram_pkg::ROW_ADDR_WIDTH-1:0] CMrsValueAddr = {
-        2'b00,           // Reserved
-        1'b0,            // Write Burst Mode (0=Programmed Burst Length)
-        3'b000,          // Operating Mode (Standard)
-        CMrsCasValue,    // CAS Latency from localparam
-        1'b0,            // Burst Type (0=Sequential)
-        CMrsBurstLenValue// Burst Length from localparam
-    };
-
-
-    // --- Typy pre FSM a riadenie bánk ---
-    typedef enum logic [4:0] {
-      INIT_WAIT, INIT_PRECHARGE, INIT_REFRESH1, INIT_REFRESH2, INIT_MRS, INIT_MRS_WAIT,
-      IDLE, EVAL_BANK, EVAL_PRECHARGE, EVAL_TIMING,
-      ACTIVATE_CMD, READ_CMD, WRITE_CMD, PRECHARGE_CMD, REFRESH_CMD,
+    typedef enum logic [5:0] { // Rozšírené na 6 bitov
+      INIT_START, INIT_WAIT,
+      INIT_PRECHARGE_CMD, INIT_PRECHARGE_WAIT,
+      INIT_REFRESH1_CMD, INIT_REFRESH1_WAIT,
+      INIT_REFRESH2_CMD, INIT_REFRESH2_WAIT,
+      INIT_MRS_CMD, INIT_MRS_WAIT,
+      IDLE, EVAL_BANK, EVAL_PRECHARGE,
+      ACTIVATE_CMD,
+      WAIT_TRCD,
+      READ_CMD, WRITE_CMD, PRECHARGE_CMD, REFRESH_CMD,
       READ_BURST, WRITE_BURST
     } state_t;
 
@@ -146,7 +93,6 @@ module SdramController #(
         endcase
     endfunction
 
-    // --- Interné signály a registre ---
     state_t state_reg, state_next;
 
     typedef enum logic { BANK_IDLE, BANK_ACTIVE } bank_state_t;
@@ -154,23 +100,23 @@ module SdramController #(
     bank_state_t bank_state_next [CNumBanks];
     logic [sdram_pkg::ROW_ADDR_WIDTH-1:0] active_row      [CNumBanks];
     logic [sdram_pkg::ROW_ADDR_WIDTH-1:0] active_row_next [CNumBanks];
-    logic [$clog2(CTras+1)-1:0]           tras_timer      [CNumBanks];
-    logic [$clog2(CTras+1)-1:0]           tras_timer_next [CNumBanks];
+    logic [$clog2(sdram_pkg::T_RAS_CYCLES+1)-1:0] tras_timer      [CNumBanks];
+    logic [$clog2(sdram_pkg::T_RAS_CYCLES+1)-1:0] tras_timer_next [CNumBanks];
 
     logic load_trp, load_trcd, load_twr, load_trfc, load_init, load_trmrd;
     logic trp_done, trcd_done, twr_done, trfc_done, init_done, trmrd_done;
 
-    logic [$clog2(CRefreshInterval+1)-1:0] refresh_counter, refresh_counter_next;
+    logic [$clog2(sdram_pkg::REFRESH_INTERVAL_CYCLES+1)-1:0] refresh_counter, refresh_counter_next;
     logic refresh_pending, refresh_pending_next;
 
     logic [$clog2(sdram_pkg::BURST_LEN):0]       burst_cnt, burst_cnt_next;
     logic [$clog2(sdram_pkg::CAS_LATENCY+1)-1:0] cas_cnt, cas_cnt_next;
 
-    sdram_pkg::sdram_cmd_t current_cmd; // Použitie scope
+    sdram_pkg::sdram_cmd_t current_cmd;
     logic dq_write_enable, dq_write_enable_d;
     logic [sdram_pkg::DATA_WIDTH-1:0] write_data_reg;
     logic fsm_ready_for_cmd;
-    sdram_pkg::sdram_cmd_t selected_cmd; // Použitie scope
+    sdram_pkg::sdram_cmd_t selected_cmd;
     logic selected_cmd_valid;
 
     logic wr_fifo_full, wr_fifo_empty;
@@ -178,44 +124,45 @@ module SdramController #(
     logic wr_fifo_wr_en, wr_fifo_rd_en;
     logic rd_fifo_wr_en, rd_fifo_rd_en;
     logic [sdram_pkg::DATA_WIDTH-1:0] wr_fifo_rd_data;
+    logic wr_fifo_overflow, wr_fifo_underflow;
+    logic rd_fifo_overflow, rd_fifo_underflow;
 
-    // -----------------------------------------------------------------
-    // Inštancie časovačov
-    // -----------------------------------------------------------------
+    logic all_banks_idle;
+
+    // --- Inštancie časovačov ---
+    // OPRAVA: Vrátený parameter .DONE_REGISTERED(1)
     CountdownTimer #(
-      .COUNT_WIDTH($clog2(CTrp+1)), .DONE_REGISTERED(1)
+      .COUNT_WIDTH($clog2(sdram_pkg::T_RP_CYCLES+1)), .DONE_REGISTERED(1)
     ) trp_timer_inst (
-      .clk(clk), .rstn(rstn), .load(load_trp), .load_val(CTrp), .done(trp_done)
+      .clk(clk), .rstn(rstn), .load(load_trp), .load_val(sdram_pkg::T_RP_CYCLES), .done(trp_done)
     );
     CountdownTimer #(
-      .COUNT_WIDTH($clog2(CTrcd+1)), .DONE_REGISTERED(1)
+      .COUNT_WIDTH($clog2(sdram_pkg::T_RCD_CYCLES+1)), .DONE_REGISTERED(1)
     ) trcd_timer_inst(
-      .clk(clk), .rstn(rstn), .load(load_trcd), .load_val(CTrcd), .done(trcd_done)
+      .clk(clk), .rstn(rstn), .load(load_trcd), .load_val(sdram_pkg::T_RCD_CYCLES), .done(trcd_done)
     );
     CountdownTimer #(
-      .COUNT_WIDTH($clog2(CTwr+1)), .DONE_REGISTERED(1)
+      .COUNT_WIDTH($clog2(sdram_pkg::T_WR_CYCLES+1)), .DONE_REGISTERED(1)
     ) twr_timer_inst (
-      .clk(clk), .rstn(rstn), .load(load_twr), .load_val(CTwr), .done(twr_done)
+      .clk(clk), .rstn(rstn), .load(load_twr), .load_val(sdram_pkg::T_WR_CYCLES), .done(twr_done)
     );
     CountdownTimer #(
-      .COUNT_WIDTH($clog2(CTrfc+1)), .DONE_REGISTERED(1)
+      .COUNT_WIDTH($clog2(sdram_pkg::T_RFC_CYCLES+1)), .DONE_REGISTERED(1)
     ) trfc_timer_inst(
-      .clk(clk), .rstn(rstn), .load(load_trfc), .load_val(CTrfc), .done(trfc_done)
+      .clk(clk), .rstn(rstn), .load(load_trfc), .load_val(sdram_pkg::T_RFC_CYCLES), .done(trfc_done)
     );
     CountdownTimer #(
-      .COUNT_WIDTH($clog2(CTmrd+1)), .DONE_REGISTERED(1)
+      .COUNT_WIDTH($clog2(sdram_pkg::T_MRD_CYCLES+1)), .DONE_REGISTERED(1)
     ) trmrd_timer_inst(
-      .clk(clk), .rstn(rstn), .load(load_trmrd), .load_val(CTmrd), .done(trmrd_done)
+      .clk(clk), .rstn(rstn), .load(load_trmrd), .load_val(sdram_pkg::T_MRD_CYCLES), .done(trmrd_done)
     );
     CountdownTimer #(
-      .COUNT_WIDTH($clog2(CInitWaitCycles+1)), .DONE_REGISTERED(1)
+      .COUNT_WIDTH($clog2(sdram_pkg::CInitWaitCycles+1)), .DONE_REGISTERED(1)
     ) init_timer_inst(
-      .clk(clk), .rstn(rstn), .load(load_init), .load_val(CInitWaitCycles), .done(init_done)
+      .clk(clk), .rstn(rstn), .load(load_init), .load_val(sdram_pkg::CInitWaitCycles), .done(init_done)
     );
 
-    // -----------------------------------------------------------------
-    // Inštancie dátových FIFO
-    // -----------------------------------------------------------------
+    // --- Inštancie dátových FIFO ---
     AsyncFifoGeneric #(
       .DATA_WIDTH(sdram_pkg::DATA_WIDTH), .ADDR_WIDTH(CFifoAddrWidth),
       .RAM_STYLE("auto"), .TWO_STAGE_SYNC(1)
@@ -223,7 +170,9 @@ module SdramController #(
       .wr_rst_ni(rstn), .rd_rst_ni(rstn),
       .wr_clk(clk), .wr_en(wr_fifo_wr_en), .wr_data(wdata), .wr_full(wr_fifo_full),
       .rd_clk(clk), .rd_en(wr_fifo_rd_en), .rd_data(wr_fifo_rd_data), .rd_empty(wr_fifo_empty),
-      .level(wdata_level)
+      .level(wdata_level),
+      .wr_overflow(wr_fifo_overflow),
+      .rd_underflow(wr_fifo_underflow)
     );
 
     AsyncFifoGeneric #(
@@ -233,12 +182,12 @@ module SdramController #(
       .wr_rst_ni(rstn), .rd_rst_ni(rstn),
       .wr_clk(clk), .wr_en(rd_fifo_wr_en), .wr_data(sdram_dq), .wr_full(rd_fifo_full),
       .rd_clk(clk), .rd_en(rd_fifo_rd_en), .rd_data(rdata), .rd_empty(rd_fifo_empty),
-      .level(rdata_level)
+      .level(rdata_level),
+      .wr_overflow(rd_fifo_overflow),
+      .rd_underflow(rd_fifo_underflow)
     );
 
-    // -----------------------------------------------------------------
-    // Kombinačná logika: Výber príkazu (Arbitrácia)
-    // -----------------------------------------------------------------
+    // --- Arbitrácia ---
     always_comb begin
         fsm_ready_for_cmd = (state_reg == IDLE) && !refresh_pending && twr_done;
 
@@ -260,13 +209,11 @@ module SdramController #(
         end
     end
 
-    // -----------------------------------------------------------------
-    // Sekvenčná logika: Hlavný FSM register a registre stavu bánk
-    // -----------------------------------------------------------------
+    // --- Sekvenčná logika ---
     always_ff @(posedge clk) begin
         if (!rstn) begin
-            state_reg         <= INIT_WAIT;
-            refresh_counter   <= CRefreshInterval; // Odstránené $bits
+            state_reg         <= INIT_START;
+            refresh_counter   <= sdram_pkg::REFRESH_INTERVAL_CYCLES;
             refresh_pending   <= 1'b0;
             cas_cnt           <= '0;
             burst_cnt         <= '0;
@@ -301,14 +248,11 @@ module SdramController #(
         end
     end
 
-    // -----------------------------------------------------------------
-    // Kombinačná logika: Hlavný FSM (výpočet ďalšieho stavu)
-    // -----------------------------------------------------------------
+    // --- Kombinačná logika FSM ---
     always_comb begin
-        sdram_pkg::sdram_addr_t cmd_addr; // Použitie scope
+        sdram_pkg::sdram_addr_t cmd_addr;
         sdram_cmd_pins_t        cmd_pins;
 
-        // --- Predvolené hodnoty (zotrvanie v stave) ---
         state_next           = state_reg;
         refresh_counter_next = refresh_counter;
         refresh_pending_next = refresh_pending;
@@ -337,62 +281,88 @@ module SdramController #(
 
         for (int i = 0; i < CNumBanks; i++)
             if (tras_timer[i] > 0)
-                tras_timer_next[i] = tras_timer[i] - 1'b1; // Odstránené $bits
+                tras_timer_next[i] = tras_timer[i] - 1'b1;
 
         if (cas_cnt > 0)
-            cas_cnt_next = cas_cnt - 1'b1; // Odstránené $bits
+            cas_cnt_next = cas_cnt - 1'b1;
 
         if (state_reg != REFRESH_CMD && refresh_counter > 0)
-            refresh_counter_next = refresh_counter - 1'b1; // Odstránené $bits
+            refresh_counter_next = refresh_counter - 1'b1;
         else if (state_reg != REFRESH_CMD && refresh_counter == 0)
             refresh_pending_next = 1'b1;
 
-        wr_fifo_rd_en = (state_reg == WRITE_BURST) && !wr_fifo_empty;
+        wr_fifo_rd_en = (state_reg == WRITE_BURST) && (burst_cnt > 0) && !wr_fifo_empty;
         wr_fifo_wr_en = wdata_valid && !wr_fifo_full;
-        rd_fifo_wr_en = (state_reg == READ_BURST) && (cas_cnt == 1) && !rd_fifo_full;
+        rd_fifo_wr_en = (state_reg == READ_BURST) && (cas_cnt == 0) && (burst_cnt > 0) && !rd_fifo_full;
         rd_fifo_rd_en = rdata_ready && !rd_fifo_empty;
 
-        // --- Hlavný FSM ---
+        all_banks_idle = 1'b1;
+        for (int i = 0; i < CNumBanks; i++) begin
+            if (bank_state[i] != BANK_IDLE)
+                all_banks_idle = 1'b0;
+        end
+
         case (state_reg)
-            INIT_WAIT: begin
+            INIT_START: begin
                 load_init = 1'b1;
                 sdram_cke = 1'b0;
+                state_next = INIT_WAIT;
+            end
+
+            INIT_WAIT: begin
+                sdram_cke = 1'b0;
                 if (init_done)
-                    state_next = INIT_PRECHARGE;
+                    state_next = INIT_PRECHARGE_CMD;
             end
 
-            INIT_PRECHARGE: begin
+            INIT_PRECHARGE_CMD: begin
                 cmd_pins                 = get_sdram_cmd(PRECHARGE);
-                sdram_addr[CApBitIndex] = 1'b1; // Precharge All
+                sdram_addr[CApBitIndex] = 1'b1;
                 load_trp                 = 1'b1;
-                state_next               = INIT_REFRESH1;
+                state_next               = INIT_PRECHARGE_WAIT;
             end
 
-            INIT_REFRESH1: if (trp_done) begin
+            INIT_PRECHARGE_WAIT: begin
+                if (trp_done)
+                    state_next = INIT_REFRESH1_CMD;
+            end
+
+            INIT_REFRESH1_CMD: begin
                 cmd_pins   = get_sdram_cmd(REFRESH);
                 load_trfc  = 1'b1;
-                state_next = INIT_REFRESH2;
+                state_next = INIT_REFRESH1_WAIT;
             end
 
-            INIT_REFRESH2: if (trfc_done) begin
+            INIT_REFRESH1_WAIT: begin
+                if (trfc_done)
+                    state_next = INIT_REFRESH2_CMD;
+            end
+
+            INIT_REFRESH2_CMD: begin
                 cmd_pins   = get_sdram_cmd(REFRESH);
                 load_trfc  = 1'b1;
-                state_next = INIT_MRS;
+                state_next = INIT_REFRESH2_WAIT;
             end
 
-            INIT_MRS: if (trfc_done) begin
+            INIT_REFRESH2_WAIT: begin
+                if (trfc_done)
+                    state_next = INIT_MRS_CMD;
+            end
+
+            INIT_MRS_CMD: begin
                 cmd_pins   = get_sdram_cmd(MRS);
-                sdram_addr = CMrsValueAddr;
+                sdram_addr = sdram_pkg::CMrsValueAddr;
                 load_trmrd = 1'b1;
                 state_next = INIT_MRS_WAIT;
             end
 
-            INIT_MRS_WAIT: if (trmrd_done) begin
-                state_next = IDLE;
+            INIT_MRS_WAIT: begin
+                if (trmrd_done)
+                    state_next = IDLE;
             end
 
             IDLE: begin
-                if (refresh_pending && twr_done)
+                if (refresh_pending && twr_done && all_banks_idle)
                     state_next = REFRESH_CMD;
                 else if (fsm_ready_for_cmd && selected_cmd_valid)
                     state_next = EVAL_BANK;
@@ -402,23 +372,19 @@ module SdramController #(
                 if (bank_state[cmd_addr.bank] == BANK_IDLE) begin
                     if (trp_done)
                         state_next = ACTIVATE_CMD;
-                end else begin // Bank is Active
+                end else begin
                     if (active_row[cmd_addr.bank] == cmd_addr.row)
-                        state_next = EVAL_TIMING; // Row hit
+                        state_next = WAIT_TRCD;
                     else
-                        state_next = EVAL_PRECHARGE; // Row miss
+                        state_next = EVAL_PRECHARGE;
                 end
             end
 
-            EVAL_PRECHARGE: if (tras_timer[cmd_addr.bank] == 0) begin
-                state_next = PRECHARGE_CMD;
-            end
-
-            EVAL_TIMING: if (trcd_done) begin
-                if (current_cmd.rw == 1'b1) // Check if write command
-                    state_next = WRITE_CMD;
-                else
-                    state_next = READ_CMD;
+            EVAL_PRECHARGE: begin
+                if (tras_timer[cmd_addr.bank] == 0) begin
+                    tras_timer_next[cmd_addr.bank] = 0;
+                    state_next = PRECHARGE_CMD;
+                end
             end
 
             ACTIVATE_CMD: begin
@@ -426,10 +392,22 @@ module SdramController #(
                 sdram_ba                       = cmd_addr.bank;
                 sdram_addr                     = cmd_addr.row;
                 load_trcd                      = 1'b1;
-                tras_timer_next[cmd_addr.bank] = CTras; // Odstránené $bits
+                tras_timer_next[cmd_addr.bank] = sdram_pkg::T_RAS_CYCLES;
                 bank_state_next[cmd_addr.bank] = BANK_ACTIVE;
                 active_row_next[cmd_addr.bank] = cmd_addr.row;
-                state_next                     = EVAL_BANK;
+                state_next                     = WAIT_TRCD;
+            end
+
+            WAIT_TRCD: begin
+                if (trcd_done) begin
+                    if (bank_state[cmd_addr.bank] == BANK_IDLE) begin
+                        state_next = EVAL_BANK;
+                    end else if (active_row[cmd_addr.bank] != cmd_addr.row) begin
+                        state_next = EVAL_BANK;
+                    end else begin
+                        state_next = (current_cmd.rw == 1'b1) ? WRITE_CMD : READ_CMD;
+                    end
+                end
             end
 
             READ_CMD: begin
@@ -437,11 +415,12 @@ module SdramController #(
                 sdram_ba                               = cmd_addr.bank;
                 sdram_addr[sdram_pkg::COL_ADDR_WIDTH-1:0] = cmd_addr.col;
                 sdram_addr[CApBitIndex]                = current_cmd.auto_precharge;
-                cas_cnt_next                           = sdram_pkg::CAS_LATENCY; // Odstránené $bits
-                burst_cnt_next                         = sdram_pkg::BURST_LEN;   // Odstránené $bits
+                cas_cnt_next                           = sdram_pkg::CAS_LATENCY;
+                burst_cnt_next                         = sdram_pkg::BURST_LEN;
                 if (current_cmd.auto_precharge) begin
                     bank_state_next[cmd_addr.bank] = BANK_IDLE;
                     load_trp                       = 1'b1;
+                    tras_timer_next[cmd_addr.bank] = 0;
                 end
                 state_next = READ_BURST;
             end
@@ -451,27 +430,39 @@ module SdramController #(
                 sdram_ba                               = cmd_addr.bank;
                 sdram_addr[sdram_pkg::COL_ADDR_WIDTH-1:0] = cmd_addr.col;
                 sdram_addr[CApBitIndex]                = current_cmd.auto_precharge;
-                burst_cnt_next                         = sdram_pkg::BURST_LEN; // Odstránené $bits
+                burst_cnt_next                         = sdram_pkg::BURST_LEN;
                 if (current_cmd.auto_precharge) begin
                     bank_state_next[cmd_addr.bank] = BANK_IDLE;
                     load_twr                       = 1'b1;
                     load_trp                       = 1'b1;
+                    tras_timer_next[cmd_addr.bank] = 0;
                 end
                 state_next = WRITE_BURST;
             end
 
-            READ_BURST: if (cas_cnt == 0) begin
-                if (burst_cnt > 0)
-                    burst_cnt_next = burst_cnt - 1'b1; // Odstránené $bits
-                if (burst_cnt == 1)
-                    state_next = IDLE;
+            READ_BURST: begin
+                if (cas_cnt == 0) begin
+                    if (burst_cnt > 0) begin
+                        if (!rd_fifo_full) begin
+                            burst_cnt_next = burst_cnt - 1'b1;
+                        end
+                    end
+
+                    if (burst_cnt == 1 && !rd_fifo_full) begin
+                        state_next = IDLE;
+                    end
+                end
             end
 
             WRITE_BURST: begin
                 dq_write_enable = 1'b1;
-                if (burst_cnt > 0)
-                    burst_cnt_next = burst_cnt - 1'b1; // Odstránené $bits
-                if (burst_cnt == 1) begin
+                if (burst_cnt > 0) begin
+                    if (!wr_fifo_empty) begin
+                        burst_cnt_next = burst_cnt - 1'b1;
+                    end
+                end
+
+                if (burst_cnt == 1 && !wr_fifo_empty) begin
                     load_twr   = 1'b1;
                     state_next = IDLE;
                 end
@@ -482,14 +473,15 @@ module SdramController #(
                 sdram_ba                       = cmd_addr.bank;
                 load_trp                       = 1'b1;
                 bank_state_next[cmd_addr.bank] = BANK_IDLE;
-                state_next                     = EVAL_BANK;
+                tras_timer_next[cmd_addr.bank] = 0;
+                state_next                     = IDLE;
             end
 
             REFRESH_CMD: begin
                 cmd_pins             = get_sdram_cmd(REFRESH);
                 load_trfc            = 1'b1;
                 refresh_pending_next = 1'b0;
-                refresh_counter_next = CRefreshInterval; // Odstránené $bits
+                refresh_counter_next = sdram_pkg::REFRESH_INTERVAL_CYCLES;
                 state_next           = IDLE;
             end
 
@@ -510,6 +502,11 @@ module SdramController #(
     // --- Obojsmerné a hodinové priradenia ---
     assign sdram_dq  = (dq_write_enable_d) ? write_data_reg : {sdram_pkg::DATA_WIDTH{1'bz}};
     assign sdram_clk = clk_sh;
+
+    // --- Diagnostické výstupy ---
+    assign busy_o = (state_reg != IDLE);
+    assign fifo_error_o = { (wr_fifo_overflow | wr_fifo_underflow),
+                            (rd_fifo_overflow | rd_fifo_underflow) };
 
 endmodule
 
