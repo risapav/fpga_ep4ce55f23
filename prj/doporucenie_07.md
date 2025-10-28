@@ -1,3 +1,4 @@
+11..
 Perfektne 👍 — tu je **prehľadná ASCII schéma** celej integrácie framebufferu, checkeru a SDRAM kontroléra.
 Schéma znázorňuje dátový aj príkazový tok, FIFO väzby a signály pre diagnostiku.
 
