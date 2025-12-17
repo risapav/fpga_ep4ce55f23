@@ -5,7 +5,7 @@
 
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 24.1STD.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:40:28  JUNE 28, 2025"
-set_global_assignment -name LAST_QUARTUS_VERSION "24.1std.0 Lite Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
 
 # ============================================================================ #

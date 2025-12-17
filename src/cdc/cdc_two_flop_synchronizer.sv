@@ -1,62 +1,60 @@
 /**
- * @brief       Dvojstupňový synchronizátor signálu pre CDC (Clock Domain Crossing).
- * @details     Modul slúži na bezpečné prenesenie asynchrónneho signálu do cieľovej hodinovej domény
- *              pomocou dvoch postupných registrov (flip-flopov). Tým sa minimalizuje riziko metastability.
- *              Šírka synchronizovaného signálu je parametrická (`WIDTH`).
+ * @file       cdc_two_flop_synchronizer.sv
+ * @brief      Dvojstupňový synchronizátor signálu pre CDC.
+ * @details    Implementuje štandardný 2-FF synchronizátor na potlačenie metastability.
+ * Výstup q_o je výstupom druhého klopného obvodu.
+ * Obsahuje atribúty pre správne umiestnenie v FPGA (Quartus/Vivado).
  *
- * @param[in]   WIDTH       Počet bitov vstupného a výstupného signálu (predvolené 1).
- * @input       clk_i       Hodinový signál cieľovej domény.
- * @input       rst_ni      Asynchrónny reset, aktívny nízky (negatívna logika).
- * @input       d_i         Asynchrónny vstupný signál (z inej hodinovej domény).
- * @output      q_o         Synchronizovaný výstupný signál, bezpečne prenesený do cieľovej domény.
+ * @param WIDTH Počet bitov signálu.
  *
- * @example
- * cdc_two_flop_synchronizer #(
- *   .WIDTH(8)
- * ) u_sync (
- *   .clk_i(clk_target),
- *   .rst_ni(rst_n),
- *   .d_i(async_signal),
- *   .q_o(sync_signal)
- * );
+ * @input clk_i  Hodinový signál cieľovej domény.
+ * @input rst_ni Asynchrónny reset (aktívny LOW).
+ * @input d_i    Vstupný asynchrónny signál.
+ * @output q_o   Synchronizovaný výstup.
  */
 
+`default_nettype none 
 
-`ifndef TWO_FLOP_SYNCHRONIZER_SV
-`define TWO_FLOP_SYNCHRONIZER_SV
-
-`default_nettype none  // Zakazuje implicitné deklarácie - zvyšuje robustnosť
+`ifndef CDC_TWO_FLOP_SYNCHRONIZER_SV
+`define CDC_TWO_FLOP_SYNCHRONIZER_SV
 
 module cdc_two_flop_synchronizer #(
-    parameter int WIDTH = 1 // Počet bitov synchronizovaného signálu
-)(
-  input  logic             clk_i,     // Hodinový signál cieľovej domény
-  input  logic             rst_ni,    // Asynchrónny reset aktívny v L (negatívna logika)
-  input  logic [WIDTH-1:0] d_i,       // Vstupný signál z inej (asynchrónnej) domény
-  output logic [WIDTH-1:0] q_o        // Výstupný, synchronizovaný signál
+    parameter int WIDTH = 1
+) (
+    input  wire logic             clk_i,
+    input  wire logic             rst_ni,
+    input  wire logic [WIDTH-1:0] d_i,
+    output      logic [WIDTH-1:0] q_o
 );
 
-  // === Prvý stupeň synchronizácie ===
-  // Tento FF zachytáva asynchrónny vstup. Označený pre Quartus ako CDC synchronizátor.
-  // Atribút `SYNCHRONIZER_IDENTIFICATION` zabezpečí automatické rozpoznanie nástrojom.
-  (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS" *)
-  logic [WIDTH-1:0] sync1_reg;
+    // Prvý stupeň synchronizácie (meta-stabilný stupeň)
+    // Atribúty aplikujeme na oba stupne (stage 1 aj stage 2/output)
+    // Poznámka: Quartus atribút sa aplikuje na premennú, Xilinx ASYNC_REG tiež.
+    
+    (* ASYNC_REG = "TRUE" *) 
+    (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS" *)
+    logic [WIDTH-1:0] q_stage1;
 
-  // === Sekvenčná logika ===
-  // Vykonáva dvojstupňovú synchronizáciu v cieľovej hodinovej doméne.
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      // Inicializácia počas resetu - zabraňuje neznámym stavom
-      sync1_reg <= 'd0;
-      q_o       <= 'd0;
-    end else begin
-      // Prvý FF zachytí asynchrónny signál
-      sync1_reg <= d_i;
-      // Druhý FF produkuje synchronizovaný výstup
-      q_o       <= sync1_reg;
+    // Druhý stupeň je priamo výstup q_o.
+    // Pre Xilinx je dobré mať ASYNC_REG aj na výstupe, ak je to súčasť reťazca, 
+    // ale tu stačí zabezpečiť, aby q_stage1 a q_o boli blízko seba.
+    // V SystemVerilogu sa atribúty zvyčajne vzťahujú na nasledujúcu deklaráciu.
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+            q_stage1 <= '0;
+            q_o      <= '0;
+        end else begin
+            // 1. Stupeň: Zachytenie asynchrónneho vstupu
+            q_stage1 <= d_i;
+            
+            // 2. Stupeň: Stabilizácia (výstup)
+            q_o      <= q_stage1;
+        end
     end
-  end
 
 endmodule
 
-`endif // TWO_FLOP_SYNCHRONIZER_SV
+`endif // CDC_TWO_FLOP_SYNCHRONIZER_SV
+
+`default_nettype wire
