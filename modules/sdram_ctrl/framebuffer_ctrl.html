@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>framebuffer_ctrl</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-framebuffer_ctrl">Modul <code>framebuffer_ctrl</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Double-Buffered Framebuffer Controller.</p>
+<p>Most medzi AXI Stream Video a SDRAM Controllerom.
+- Input: AXI Stream Sink (Zápis do SDRAM).
+- Output: AXI Stream Source (Čítanie z SDRAM pre displej).
+- Podporuje Double Buffering (Ping-Pong) pre elimináciu tearingu.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>H_RES</code>: Horizontálne rozlíšenie (pre generovanie TLAST).</li>
+<li><code>V_RES</code>: Vertikálne rozlíšenie.</li>
+<li><code>BASE_ADDR_0</code>: Adresa prvého buffera v SDRAM.</li>
+<li><code>BASE_ADDR_1</code>: Adresa druhého buffera v SDRAM.</li>
+<li><code>ASYNC_FIFO_DEPTH</code>: Hĺbka interných FIFO (musí byť &gt; 2 * BURST_LEN).</li>
+</ul>
+</body>
+</html>

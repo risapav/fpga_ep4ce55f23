@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>axis_stream_checker</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-axis_stream_checker">Modul <code>axis_stream_checker</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Checker pre AXI4-Stream protokol (TUSER, TLAST, Frame Dimensions).</p>
+<p>Overuje integritu video streamu. Detekuje chýbajúci TLAST,
+nesprávny SOF (TUSER[0]), a nezhodu rozmerov snímky.
+Obsahuje diagnostické počítadlá a latchovanie prvej chyby.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>FRAME_WIDTH</code>: Očakávaná šírka snímky.</li>
+<li><code>FRAME_HEIGHT</code>: Očakávaná výška snímky.</li>
+<li><code>C_ENABLE_CHECKS</code>: Povolenie logiky checkera (0 = optimalizácia pre syntézu).</li>
+<li><code>C_ENABLE_ASSERTS</code>: Povolenie simulačných správ.</li>
+<li><code>C_STRICT_MODE</code>: 1 = $error (Stop), 0 = $warning.</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>seven_segment_mux</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-seven_segment_mux">Modul <code>seven_segment_mux</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Multiplexovaný ovládač 7-segmentového displeja (BCD).</p>
+<p>Zobrazuje číslice 0-9. Pre HEX (0-F) použite seven_seg_hex_mux.
+Podporuje Common Anode aj Common Cathode.
+Výstupy sú registrované pre bezpečné pripojenie na FPGA piny.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>NUM_DIGITS</code>: Počet číslic.</li>
+<li><code>CLK_FREQ_HZ</code>: Frekvencia hodín (Hz).</li>
+<li><code>DIGIT_REFRESH_RATE_HZ</code>: Obnovovacia frekvencia celého displeja (Hz).</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Hodiny.</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Asynchrónny reset (active-low).</td>
+</tr>
+<tr>
+<td><code>digits_i</code></td>
+<td>Pole BCD hodnôt (packed array [N][3:0]).</td>
+</tr>
+<tr>
+<td><code>dp_i</code></td>
+<td>Desatinné bodky.</td>
+</tr>
+<tr>
+<td><code>common_anode_i</code></td>
+<td>1 = Common Anode (Active Low), 0 = Common Cathode.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>segments_o</code></td>
+<td>Segmenty (a-g).</td>
+</tr>
+<tr>
+<td><code>dp_o</code></td>
+<td>Desatinná bodka výstup.</td>
+</tr>
+<tr>
+<td><code>digit_en_o</code></td>
+<td>Povolenie digitu.</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

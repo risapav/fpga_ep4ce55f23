@@ -1,0 +1,914 @@
+[
+  {
+    "module": "count_down_timer",
+    "source": "utils/count_down_timer.sv",
+    "brief": "Generický odpočítavací časovač.",
+    "doc": "utils/count_down_timer.md"
+  },
+  {
+    "module": "seven_segment_mux",
+    "source": "utils/seven_segment_mux.sv",
+    "brief": "Multiplexovaný ovládač 7-segmentového displeja (BCD).",
+    "doc": "utils/seven_segment_mux.md"
+  },
+  {
+    "module": "blink_led",
+    "source": "utils/blink_led.sv",
+    "brief": "Jednoduchý modul na blikanie LED s nastaviteľnou frekvenciou.",
+    "doc": "utils/blink_led.md"
+  },
+  {
+    "module": "seven_seg_hex_mux",
+    "source": "utils/seven_seg_hex_mux.sv",
+    "brief": "Multiplexovaný 7-segmentový ovládač (HEX dekodér).",
+    "doc": "utils/seven_seg_hex_mux.md"
+  },
+  {
+    "module": "gray_to_bin",
+    "source": "utils/gray_to_bin.sv",
+    "brief": "Kombinačný prevodník z Gray kódu na binárny.",
+    "doc": "utils/gray_to_bin.md"
+  },
+  {
+    "module": "gray_counter_2bit",
+    "source": "utils/gray_counter_2bit.sv",
+    "brief": "Synchrónny 2-bitový čítač s Grayovým kódom.",
+    "doc": "utils/gray_counter_2bit.md"
+  },
+  {
+    "module": "pointer_sync",
+    "source": "utils/pointer_sync.sv",
+    "brief": "Modul pre synchronizáciu pointerov a inkrementáciu lokálneho pointera.",
+    "doc": "utils/pointer_sync.md"
+  },
+  {
+    "module": "seven_seg_decoder",
+    "source": "utils/seven_seg_decoder.sv",
+    "brief": "",
+    "doc": "utils/seven_seg_decoder.md"
+  },
+  {
+    "module": "gray_counter_2bit",
+    "source": "utils/gray_counter.sv",
+    "brief": "Synchronny 2-bitovy citac s Grayovym kodom.",
+    "doc": "utils/gray_counter_2bit_2.md"
+  },
+  {
+    "module": "up_down_counter",
+    "source": "utils/up_down_counter.sv",
+    "brief": "8-bitový synchrónny reverzibilný (up/down) čítač.",
+    "doc": "utils/up_down_counter.md"
+  },
+  {
+    "module": "vga_timing_generator",
+    "source": "utils/vga_timing_generator.sv",
+    "brief": "Generátor časovania pre VGA (HSync, VSync, Blanking).",
+    "doc": "utils/vga_timing_generator.md"
+  },
+  {
+    "module": "cdc_async_fifo",
+    "source": "cdc/cdc_async_fifo.sv",
+    "brief": "Asynchrónny FIFO buffer (CDC) s konfigurovateľnými prahmi.",
+    "doc": "cdc/cdc_async_fifo.md"
+  },
+  {
+    "module": "cdc_two_flop_synchronizer",
+    "source": "cdc/cdc_two_flop_synchronizer.sv",
+    "brief": "Dvojstupňový synchronizátor signálu pre CDC.",
+    "doc": "cdc/cdc_two_flop_synchronizer.md"
+  },
+  {
+    "module": "cdc_reset_synchronizer",
+    "source": "cdc/cdc_reset_synchronizer.sv",
+    "brief": "Synchronizátor asynchrónneho resetu (Reset Bridge).",
+    "doc": "cdc/cdc_reset_synchronizer.md"
+  },
+  {
+    "module": "sdram_top",
+    "source": "sdram_ctrl/sdram_top.sv",
+    "brief": "Top-Level SDRAM Interface (Wrapper).",
+    "doc": "sdram_ctrl/sdram_top.md"
+  },
+  {
+    "module": "fb_addr_translator",
+    "source": "sdram_ctrl/fb_addr_translator.sv",
+    "brief": "Prekladá lineárnu 32-bitovú adresu na SDRAM geometriu (Bank, Row, Col).",
+    "doc": "sdram_ctrl/fb_addr_translator.md"
+  },
+  {
+    "module": "instantiation",
+    "source": "sdram_ctrl/sdram_pkg.sv",
+    "brief": "Global definitions and parameters for SDRAM controller.",
+    "doc": "sdram_ctrl/instantiation.md"
+  },
+  {
+    "module": "framebuffer_ctrl",
+    "source": "sdram_ctrl/framebuffer_ctrl.sv",
+    "brief": "Double-Buffered Framebuffer Controller.",
+    "doc": "sdram_ctrl/framebuffer_ctrl.md"
+  },
+  {
+    "module": "sdram_ctrl",
+    "source": "sdram_ctrl/sdram_ctrl.sv",
+    "brief": "SDRAM Core Controller.",
+    "doc": "sdram_ctrl/sdram_ctrl.md"
+  },
+  {
+    "module": "sdram_cmd_checker",
+    "source": "sdram_ctrl/sdram_cmd_checker.sv",
+    "brief": "SDRAM Command Validator (Gatekeeper).",
+    "doc": "sdram_ctrl/sdram_cmd_checker.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "framebuffer/FramebufferControllerPingPong_33.sv",
+    "brief": "",
+    "doc": "framebuffer/CountdownTimer.md"
+  },
+  {
+    "module": "PointerSync",
+    "source": "framebuffer/FramebufferControllerPingPong_33.sv",
+    "brief": "",
+    "doc": "framebuffer/PointerSync.md"
+  },
+  {
+    "module": "GrayToBin",
+    "source": "framebuffer/FramebufferControllerPingPong_33.sv",
+    "brief": "",
+    "doc": "framebuffer/GrayToBin.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "framebuffer/FramebufferControllerPingPong_33.sv",
+    "brief": "",
+    "doc": "framebuffer/AsyncFifoGeneric.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "framebuffer/FramebufferControllerPingPong_33.sv",
+    "brief": "",
+    "doc": "framebuffer/SdramController.md"
+  },
+  {
+    "module": "FramebufferController",
+    "source": "framebuffer/FramebufferControllerPingPong_33.sv",
+    "brief": "",
+    "doc": "framebuffer/FramebufferController.md"
+  },
+  {
+    "module": "framebuffer_ctrl",
+    "source": "framebuffer/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer/framebuffer_ctrl_2.md"
+  },
+  {
+    "module": "framebuffer_ctrl",
+    "source": "framebuffer/framebuffer_21.sv",
+    "brief": "",
+    "doc": "framebuffer/framebuffer_ctrl_3.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "framebuffer/framebuffer_ctrl.sv",
+    "brief": "",
+    "doc": "framebuffer/CountdownTimer_2.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "framebuffer/framebuffer_ctrl.sv",
+    "brief": "",
+    "doc": "framebuffer/AsyncFifoGeneric_2.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "framebuffer/framebuffer_ctrl.sv",
+    "brief": "",
+    "doc": "framebuffer/SdramControllerFinal.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "framebuffer/framebuffer_ctrl.sv",
+    "brief": "",
+    "doc": "framebuffer/AxiStreamSdramWrapper.md"
+  },
+  {
+    "module": "framebuffer_ctrl",
+    "source": "framebuffer/framebuffer_ctrl.sv",
+    "brief": "",
+    "doc": "framebuffer/framebuffer_ctrl_4.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "framebuffer/FramebufferControllerPingPong_35.sv",
+    "brief": "Asynchrónne FIFO (Dual Reset, Registrovaný Výstup)",
+    "doc": "framebuffer/CountdownTimer_3.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "framebuffer/FramebufferControllerPingPong_35.sv",
+    "brief": "Synchronizátor pointerov (Gray kód)",
+    "doc": "framebuffer/AsyncFifoGeneric_3.md"
+  },
+  {
+    "module": "PointerSync",
+    "source": "framebuffer/FramebufferControllerPingPong_35.sv",
+    "brief": "Prevodník Gray kódu na binárny",
+    "doc": "framebuffer/PointerSync_2.md"
+  },
+  {
+    "module": "GrayToBin",
+    "source": "framebuffer/FramebufferControllerPingPong_35.sv",
+    "brief": "",
+    "doc": "framebuffer/GrayToBin_2.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "framebuffer/FramebufferControllerPingPong_35.sv",
+    "brief": "",
+    "doc": "framebuffer/SdramController_2.md"
+  },
+  {
+    "module": "FramebufferController",
+    "source": "framebuffer/FramebufferControllerPingPong_35.sv",
+    "brief": "",
+    "doc": "framebuffer/FramebufferController_2.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "framebuffer/FramebufferControllerPingPong_34.sv",
+    "brief": "",
+    "doc": "framebuffer/CountdownTimer_4.md"
+  },
+  {
+    "module": "PointerSync",
+    "source": "framebuffer/FramebufferControllerPingPong_34.sv",
+    "brief": "",
+    "doc": "framebuffer/PointerSync_3.md"
+  },
+  {
+    "module": "GrayToBin",
+    "source": "framebuffer/FramebufferControllerPingPong_34.sv",
+    "brief": "",
+    "doc": "framebuffer/GrayToBin_3.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "framebuffer/FramebufferControllerPingPong_34.sv",
+    "brief": "",
+    "doc": "framebuffer/AsyncFifoGeneric_4.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "framebuffer/FramebufferControllerPingPong_34.sv",
+    "brief": "",
+    "doc": "framebuffer/SdramController_3.md"
+  },
+  {
+    "module": "FramebufferController",
+    "source": "framebuffer/FramebufferControllerPingPong_34.sv",
+    "brief": "",
+    "doc": "framebuffer/FramebufferController_3.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "framebuffer/FramebufferControllerPingPong_32.sv",
+    "brief": "",
+    "doc": "framebuffer/CountdownTimer_5.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "framebuffer/FramebufferControllerPingPong_32.sv",
+    "brief": "",
+    "doc": "framebuffer/AsyncFifoGeneric_5.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "framebuffer/FramebufferControllerPingPong_32.sv",
+    "brief": "",
+    "doc": "framebuffer/SdramController_4.md"
+  },
+  {
+    "module": "FramebufferController",
+    "source": "framebuffer/FramebufferControllerPingPong_32.sv",
+    "brief": "",
+    "doc": "framebuffer/FramebufferController_4.md"
+  },
+  {
+    "module": "FramebufferController",
+    "source": "framebuffer_02/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer_02/FramebufferController_5.md"
+  },
+  {
+    "module": "Fifo",
+    "source": "framebuffer_02/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer_02/Fifo.md"
+  },
+  {
+    "module": "framebuffer_ctrl",
+    "source": "framebuffer_01/framebuffer.sv",
+    "brief": "",
+    "doc": "framebuffer_01/framebuffer_ctrl_5.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_13.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_2.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_154.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_3.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_103.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_2.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_197.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_4.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_159.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_5.md"
+  },
+  {
+    "module": "SdramCmdArbiter",
+    "source": "sdram/sdram_arbiter.sv",
+    "brief": "",
+    "doc": "sdram/SdramCmdArbiter.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_202.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_6.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_140.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_5.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_00.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_6.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_191.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_7.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_200.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_8.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_153.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_9.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_151.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_10.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_152.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_11.md"
+  },
+  {
+    "module": "SimpleSdramTester",
+    "source": "sdram/simple_sdram_tester.sv",
+    "brief": "",
+    "doc": "sdram/SimpleSdramTester.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_65.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_7.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_170.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_12.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_205.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_13.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_104.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_3.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_157.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_14.md"
+  },
+  {
+    "module": "SdramControllerAdvanced",
+    "source": "sdram/sdram_ctrl_70.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerAdvanced.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "sdram/sdram_ctrl_120.sv",
+    "brief": "",
+    "doc": "sdram/CountdownTimer_6.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_120.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_4.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_81.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_5.md"
+  },
+  {
+    "module": "sdram_ctrl_tester",
+    "source": "sdram/sdram_ctrl_tester.sv",
+    "brief": "",
+    "doc": "sdram/sdram_ctrl_tester.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_204.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_15.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_19.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_16.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_193.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_17.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_160.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_18.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "sdram/sdram_ctrl_130.sv",
+    "brief": "",
+    "doc": "sdram/AsyncFifoGeneric_6.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_130.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_6.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_190.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_19.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_18.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_20.md"
+  },
+  {
+    "module": "AxiStreamToSdramWrite",
+    "source": "sdram/axis_to_sdram.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamToSdramWrite.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_71.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_7.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_10.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_21.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "sdram/sdram_ctrl_110.sv",
+    "brief": "",
+    "doc": "sdram/CountdownTimer_7.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_110.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_8.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_80.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_9.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_66.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_8.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_610.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_9.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_155.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_22.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_69.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_10.md"
+  },
+  {
+    "module": "SdramDriver",
+    "source": "sdram/sdram_driver.sv",
+    "brief": "",
+    "doc": "sdram/SdramDriver.md"
+  },
+  {
+    "module": "parameters",
+    "source": "sdram/sdram_driver.sv",
+    "brief": "",
+    "doc": "sdram/parameters.md"
+  },
+  {
+    "module": "sdram_controller_tb",
+    "source": "sdram/tb_sdram_ctrl_69.sv",
+    "brief": "",
+    "doc": "sdram/sdram_controller_tb.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_194.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_23.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_195.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_24.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_105.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_10.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_203.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_25.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_198.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_26.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_14.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_27.md"
+  },
+  {
+    "module": "SdramDriverStub",
+    "source": "sdram/sdram_stub.sv",
+    "brief": "",
+    "doc": "sdram/SdramDriverStub.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_11.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_28.md"
+  },
+  {
+    "module": "Top",
+    "source": "sdram/top_wr_20.sv",
+    "brief": "",
+    "doc": "sdram/Top.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_156.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_29.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_17.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_30.md"
+  },
+  {
+    "module": "SdramToAxiStreamRead",
+    "source": "sdram/sdram_to_axis.sv",
+    "brief": "",
+    "doc": "sdram/SdramToAxiStreamRead.md"
+  },
+  {
+    "module": "CountdownTimer",
+    "source": "sdram/sdram_ctrl_131.sv",
+    "brief": "",
+    "doc": "sdram/CountdownTimer_8.md"
+  },
+  {
+    "module": "AsyncFifoGeneric",
+    "source": "sdram/sdram_ctrl_131.sv",
+    "brief": "",
+    "doc": "sdram/AsyncFifoGeneric_7.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_131.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_11.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_100.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_12.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_68.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_11.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_180.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_31.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_158.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_32.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl_67.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_12.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_201.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_33.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_12.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_34.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_101.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_13.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_196.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_35.md"
+  },
+  {
+    "module": "AxiStreamSdramVgaTopDualBuffer",
+    "source": "sdram/axis_sdram_vga_dualbuffer.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramVgaTopDualBuffer.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_20.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_36.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_192.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_37.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_102.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_14.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiSreamSdramWrapper_199.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_38.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_15.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_39.md"
+  },
+  {
+    "module": "AxiStreamSdramWrapper",
+    "source": "sdram/AxiStreamSdramWrapper_16.sv",
+    "brief": "",
+    "doc": "sdram/AxiStreamSdramWrapper_40.md"
+  },
+  {
+    "module": "sdram_physical_tester",
+    "source": "sdram/sdram_physical_tester.sv",
+    "brief": "",
+    "doc": "sdram/sdram_physical_tester.md"
+  },
+  {
+    "module": "SdramController",
+    "source": "sdram/sdram_ctrl.sv",
+    "brief": "",
+    "doc": "sdram/SdramController_13.md"
+  },
+  {
+    "module": "parameters",
+    "source": "sdram/sdram_ctrl.sv",
+    "brief": "",
+    "doc": "sdram/parameters_2.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_711.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_15.md"
+  },
+  {
+    "module": "Top",
+    "source": "sdram/top_wr_10.sv",
+    "brief": "",
+    "doc": "sdram/Top_2.md"
+  },
+  {
+    "module": "SdramControllerFinal",
+    "source": "sdram/sdram_ctrl_90.sv",
+    "brief": "",
+    "doc": "sdram/SdramControllerFinal_16.md"
+  },
+  {
+    "module": "rgb565_to_rgb888",
+    "source": "vga/rgb565_to_rgb888.sv",
+    "brief": "Kombinačný modul, ktorý konvertuje 16-bitovú farbu vo formáte RGB565 na 24-bitovú farbu vo formáte RGB888.",
+    "doc": "vga/rgb565_to_rgb888.md"
+  },
+  {
+    "module": "vga_timing",
+    "source": "vga/vga_timing.sv",
+    "brief": "VGA generátor časovania",
+    "doc": "vga/vga_timing.md"
+  },
+  {
+    "module": "vga_ctrl",
+    "source": "vga/vga_ctrl.sv",
+    "brief": "",
+    "doc": "vga/vga_ctrl.md"
+  },
+  {
+    "module": "vga_line",
+    "source": "vga/vga_line.sv",
+    "brief": "",
+    "doc": "vga/vga_line.md"
+  },
+  {
+    "module": "vga_pixel_xy",
+    "source": "vga/vga_pixel_xy.sv",
+    "brief": "Generátor VGA súradníc pixelov (X, Y)",
+    "doc": "vga/vga_pixel_xy.md"
+  },
+  {
+    "module": "vga_ctrl",
+    "source": "vga/vga_ctrl_2.sv",
+    "brief": "",
+    "doc": "vga/vga_ctrl_2.md"
+  },
+  {
+    "module": "GradientPattern",
+    "source": "axis/axis_gradient_generator.sv",
+    "brief": "Generuje AXI4-Stream výstup s farebným gradientom.",
+    "doc": "axis/GradientPattern.md"
+  },
+  {
+    "module": "axis_gradient_generator",
+    "source": "axis/axis_gradient_generator.sv",
+    "brief": "",
+    "doc": "axis/axis_gradient_generator.md"
+  },
+  {
+    "module": "axis_picture_generator",
+    "source": "axis/axis_picture_generator.sv",
+    "brief": "Generátor testovacích obrazcov pre AXI4-Stream.",
+    "doc": "axis/axis_picture_generator.md"
+  },
+  {
+    "module": "axis_cdc_fifo",
+    "source": "axis/axis_cdc_fifo.sv",
+    "brief": "Bezpečný AXI4-Stream Clock Domain Crossing FIFO.",
+    "doc": "axis/axis_cdc_fifo.md"
+  },
+  {
+    "module": "axis_stream_checker",
+    "source": "axis/axis_stream_checker.sv",
+    "brief": "Checker pre AXI4-Stream protokol (TUSER, TLAST, Frame Dimensions).",
+    "doc": "axis/axis_stream_checker.md"
+  },
+  {
+    "module": "axis_frame_streamer",
+    "source": "axis/axis_frame_streamer.sv",
+    "brief": "AXI4-Stream Frame Streamer generujúci súradnice pixelov.",
+    "doc": "axis/axis_frame_streamer.md"
+  },
+  {
+    "module": "CheckerPattern",
+    "source": "axis/axis_checker_generator.sv",
+    "brief": "AXI4-Stream generátor šachovnicového vzoru.",
+    "doc": "axis/CheckerPattern.md"
+  },
+  {
+    "module": "axis_checker_generator",
+    "source": "axis/axis_checker_generator.sv",
+    "brief": "",
+    "doc": "axis/axis_checker_generator.md"
+  },
+  {
+    "module": "axis_to_vga",
+    "source": "axis/axis_to_vga.sv",
+    "brief": "AXI-Stream na VGA prevodník s časovaním a registrovaným výstupom.",
+    "doc": "axis/axis_to_vga.md"
+  },
+  {
+    "module": "skid_buffer",
+    "source": "buffer/skid_buffer.sv",
+    "brief": "Full-Throughput Pipeline Register (Skid Buffer).",
+    "doc": "buffer/skid_buffer.md"
+  },
+  {
+    "module": "sync_fifo",
+    "source": "buffer/sync_fifo.sv",
+    "brief": "Synchrónne FIFO s podporou Byte Enable.",
+    "doc": "buffer/sync_fifo.md"
+  }
+]

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>README</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="dokumentacia-modulov">Dokumentácia modulov</h1>
+<h2 id="zoznam">🔧 Zoznam</h2>
+<table>
+<thead>
+<tr>
+<th>Názov modulu</th>
+<th>Popis</th>
+<th>Zdrojový súbor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="modules/framebuffer/AsyncFifoGeneric.md">AsyncFifoGeneric</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_33.sv">framebuffer/FramebufferControllerPingPong_33.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/AsyncFifoGeneric_2.md">AsyncFifoGeneric</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer_ctrl.sv">framebuffer/framebuffer_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/AsyncFifoGeneric_3.md">AsyncFifoGeneric</a></td>
+<td>Synchronizátor pointerov (Gray kód)</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_35.sv">framebuffer/FramebufferControllerPingPong_35.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/AsyncFifoGeneric_4.md">AsyncFifoGeneric</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_34.sv">framebuffer/FramebufferControllerPingPong_34.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/AsyncFifoGeneric_5.md">AsyncFifoGeneric</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_32.sv">framebuffer/FramebufferControllerPingPong_32.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AsyncFifoGeneric_6.md">AsyncFifoGeneric</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_130.sv">sdram/sdram_ctrl_130.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AsyncFifoGeneric_7.md">AsyncFifoGeneric</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_131.sv">sdram/sdram_ctrl_131.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_cdc_fifo.md">axis_cdc_fifo</a></td>
+<td>Bezpečný AXI4-Stream Clock Domain Crossing FIFO.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_cdc_fifo.sv">axis/axis_cdc_fifo.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_checker_generator.md">axis_checker_generator</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_checker_generator.sv">axis/axis_checker_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_frame_streamer.md">axis_frame_streamer</a></td>
+<td>AXI4-Stream Frame Streamer generujúci súradnice pixelov.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_frame_streamer.sv">axis/axis_frame_streamer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_gradient_generator.md">axis_gradient_generator</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_gradient_generator.sv">axis/axis_gradient_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_picture_generator.md">axis_picture_generator</a></td>
+<td>Generátor testovacích obrazcov pre AXI4-Stream.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_picture_generator.sv">axis/axis_picture_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_stream_checker.md">axis_stream_checker</a></td>
+<td>Checker pre AXI4-Stream protokol (TUSER, TLAST, Frame Dimensions).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_stream_checker.sv">axis/axis_stream_checker.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/axis_to_vga.md">axis_to_vga</a></td>
+<td>AXI-Stream na VGA prevodník s časovaním a registrovaným výstupom.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_to_vga.sv">axis/axis_to_vga.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramVgaTopDualBuffer.md">AxiStreamSdramVgaTopDualBuffer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/axis_sdram_vga_dualbuffer.sv">sdram/axis_sdram_vga_dualbuffer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/AxiStreamSdramWrapper.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer_ctrl.sv">framebuffer/framebuffer_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_2.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_13.sv">sdram/AxiStreamSdramWrapper_13.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_3.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_154.sv">sdram/AxiStreamSdramWrapper_154.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_4.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_197.sv">sdram/AxiSreamSdramWrapper_197.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_5.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_159.sv">sdram/AxiStreamSdramWrapper_159.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_6.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_202.sv">sdram/AxiSreamSdramWrapper_202.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_7.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_191.sv">sdram/AxiStreamSdramWrapper_191.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_8.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_200.sv">sdram/AxiSreamSdramWrapper_200.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_9.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_153.sv">sdram/AxiStreamSdramWrapper_153.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_10.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_151.sv">sdram/AxiStreamSdramWrapper_151.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_11.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_152.sv">sdram/AxiStreamSdramWrapper_152.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_12.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_170.sv">sdram/AxiSreamSdramWrapper_170.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_13.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_205.sv">sdram/AxiSreamSdramWrapper_205.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_14.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_157.sv">sdram/AxiStreamSdramWrapper_157.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_15.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_204.sv">sdram/AxiSreamSdramWrapper_204.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_16.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_19.sv">sdram/AxiStreamSdramWrapper_19.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_17.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_193.sv">sdram/AxiStreamSdramWrapper_193.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_18.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_160.sv">sdram/AxiStreamSdramWrapper_160.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_19.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_190.sv">sdram/AxiStreamSdramWrapper_190.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_20.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_18.sv">sdram/AxiStreamSdramWrapper_18.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_21.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_10.sv">sdram/AxiStreamSdramWrapper_10.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_22.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_155.sv">sdram/AxiStreamSdramWrapper_155.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_23.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_194.sv">sdram/AxiStreamSdramWrapper_194.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_24.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_195.sv">sdram/AxiSreamSdramWrapper_195.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_25.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_203.sv">sdram/AxiSreamSdramWrapper_203.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_26.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_198.sv">sdram/AxiSreamSdramWrapper_198.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_27.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_14.sv">sdram/AxiStreamSdramWrapper_14.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_28.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_11.sv">sdram/AxiStreamSdramWrapper_11.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_29.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_156.sv">sdram/AxiStreamSdramWrapper_156.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_30.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_17.sv">sdram/AxiStreamSdramWrapper_17.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_31.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_180.sv">sdram/AxiSreamSdramWrapper_180.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_32.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_158.sv">sdram/AxiStreamSdramWrapper_158.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_33.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_201.sv">sdram/AxiSreamSdramWrapper_201.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_34.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_12.sv">sdram/AxiStreamSdramWrapper_12.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_35.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_196.sv">sdram/AxiSreamSdramWrapper_196.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_36.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_20.sv">sdram/AxiStreamSdramWrapper_20.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_37.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_192.sv">sdram/AxiStreamSdramWrapper_192.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_38.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiSreamSdramWrapper_199.sv">sdram/AxiSreamSdramWrapper_199.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_39.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_15.sv">sdram/AxiStreamSdramWrapper_15.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamSdramWrapper_40.md">AxiStreamSdramWrapper</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/AxiStreamSdramWrapper_16.sv">sdram/AxiStreamSdramWrapper_16.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/AxiStreamToSdramWrite.md">AxiStreamToSdramWrite</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/axis_to_sdram.sv">sdram/axis_to_sdram.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/blink_led.md">blink_led</a></td>
+<td>Jednoduchý modul na blikanie LED s nastaviteľnou frekvenciou.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/blink_led.sv">utils/blink_led.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/cdc/cdc_async_fifo.md">cdc_async_fifo</a></td>
+<td>Asynchrónny FIFO buffer (CDC) s konfigurovateľnými prahmi.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/cdc/cdc_async_fifo.sv">cdc/cdc_async_fifo.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/cdc/cdc_reset_synchronizer.md">cdc_reset_synchronizer</a></td>
+<td>Synchronizátor asynchrónneho resetu (Reset Bridge).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/cdc/cdc_reset_synchronizer.sv">cdc/cdc_reset_synchronizer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/cdc/cdc_two_flop_synchronizer.md">cdc_two_flop_synchronizer</a></td>
+<td>Dvojstupňový synchronizátor signálu pre CDC.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/cdc/cdc_two_flop_synchronizer.sv">cdc/cdc_two_flop_synchronizer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/CheckerPattern.md">CheckerPattern</a></td>
+<td>AXI4-Stream generátor šachovnicového vzoru.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_checker_generator.sv">axis/axis_checker_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/count_down_timer.md">count_down_timer</a></td>
+<td>Generický odpočítavací časovač.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/count_down_timer.sv">utils/count_down_timer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/CountdownTimer.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_33.sv">framebuffer/FramebufferControllerPingPong_33.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/CountdownTimer_2.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer_ctrl.sv">framebuffer/framebuffer_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/CountdownTimer_3.md">CountdownTimer</a></td>
+<td>Asynchrónne FIFO (Dual Reset, Registrovaný Výstup)</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_35.sv">framebuffer/FramebufferControllerPingPong_35.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/CountdownTimer_4.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_34.sv">framebuffer/FramebufferControllerPingPong_34.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/CountdownTimer_5.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_32.sv">framebuffer/FramebufferControllerPingPong_32.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/CountdownTimer_6.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_120.sv">sdram/sdram_ctrl_120.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/CountdownTimer_7.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_110.sv">sdram/sdram_ctrl_110.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/CountdownTimer_8.md">CountdownTimer</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_131.sv">sdram/sdram_ctrl_131.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram_ctrl/fb_addr_translator.md">fb_addr_translator</a></td>
+<td>Prekladá lineárnu 32-bitovú adresu na SDRAM geometriu (Bank, Row, Col).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram_ctrl/fb_addr_translator.sv">sdram_ctrl/fb_addr_translator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer_02/Fifo.md">Fifo</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer_02/framebuffer.sv">framebuffer_02/framebuffer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram_ctrl/framebuffer_ctrl.md">framebuffer_ctrl</a></td>
+<td>Double-Buffered Framebuffer Controller.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram_ctrl/framebuffer_ctrl.sv">sdram_ctrl/framebuffer_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/framebuffer_ctrl_2.md">framebuffer_ctrl</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer.sv">framebuffer/framebuffer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/framebuffer_ctrl_3.md">framebuffer_ctrl</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer_21.sv">framebuffer/framebuffer_21.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/framebuffer_ctrl_4.md">framebuffer_ctrl</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer_ctrl.sv">framebuffer/framebuffer_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer_01/framebuffer_ctrl_5.md">framebuffer_ctrl</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer_01/framebuffer.sv">framebuffer_01/framebuffer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/FramebufferController.md">FramebufferController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_33.sv">framebuffer/FramebufferControllerPingPong_33.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/FramebufferController_2.md">FramebufferController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_35.sv">framebuffer/FramebufferControllerPingPong_35.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/FramebufferController_3.md">FramebufferController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_34.sv">framebuffer/FramebufferControllerPingPong_34.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/FramebufferController_4.md">FramebufferController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_32.sv">framebuffer/FramebufferControllerPingPong_32.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer_02/FramebufferController_5.md">FramebufferController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer_02/framebuffer.sv">framebuffer_02/framebuffer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/axis/GradientPattern.md">GradientPattern</a></td>
+<td>Generuje AXI4-Stream výstup s farebným gradientom.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/axis/axis_gradient_generator.sv">axis/axis_gradient_generator.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/gray_counter_2bit.md">gray_counter_2bit</a></td>
+<td>Synchrónny 2-bitový čítač s Grayovým kódom.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/gray_counter_2bit.sv">utils/gray_counter_2bit.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/gray_counter_2bit_2.md">gray_counter_2bit</a></td>
+<td>Synchronny 2-bitovy citac s Grayovym kodom.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/gray_counter.sv">utils/gray_counter.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/gray_to_bin.md">gray_to_bin</a></td>
+<td>Kombinačný prevodník z Gray kódu na binárny.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/gray_to_bin.sv">utils/gray_to_bin.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/GrayToBin.md">GrayToBin</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_33.sv">framebuffer/FramebufferControllerPingPong_33.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/GrayToBin_2.md">GrayToBin</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_35.sv">framebuffer/FramebufferControllerPingPong_35.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/GrayToBin_3.md">GrayToBin</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_34.sv">framebuffer/FramebufferControllerPingPong_34.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram_ctrl/instantiation.md">instantiation</a></td>
+<td>Global definitions and parameters for SDRAM controller.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram_ctrl/sdram_pkg.sv">sdram_ctrl/sdram_pkg.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/parameters.md">parameters</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_driver.sv">sdram/sdram_driver.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/parameters_2.md">parameters</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl.sv">sdram/sdram_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/pointer_sync.md">pointer_sync</a></td>
+<td>Modul pre synchronizáciu pointerov a inkrementáciu lokálneho pointera.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/pointer_sync.sv">utils/pointer_sync.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/PointerSync.md">PointerSync</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_33.sv">framebuffer/FramebufferControllerPingPong_33.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/PointerSync_2.md">PointerSync</a></td>
+<td>Prevodník Gray kódu na binárny</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_35.sv">framebuffer/FramebufferControllerPingPong_35.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/PointerSync_3.md">PointerSync</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_34.sv">framebuffer/FramebufferControllerPingPong_34.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga/rgb565_to_rgb888.md">rgb565_to_rgb888</a></td>
+<td>Kombinačný modul, ktorý konvertuje 16-bitovú farbu vo formáte RGB565 na 24-bitovú farbu vo formáte RGB888.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga/rgb565_to_rgb888.sv">vga/rgb565_to_rgb888.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram_ctrl/sdram_cmd_checker.md">sdram_cmd_checker</a></td>
+<td>SDRAM Command Validator (Gatekeeper).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram_ctrl/sdram_cmd_checker.sv">sdram_ctrl/sdram_cmd_checker.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/sdram_controller_tb.md">sdram_controller_tb</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/tb_sdram_ctrl_69.sv">sdram/tb_sdram_ctrl_69.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram_ctrl/sdram_ctrl.md">sdram_ctrl</a></td>
+<td>SDRAM Core Controller.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram_ctrl/sdram_ctrl.sv">sdram_ctrl/sdram_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/sdram_ctrl_tester.md">sdram_ctrl_tester</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_tester.sv">sdram/sdram_ctrl_tester.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/sdram_physical_tester.md">sdram_physical_tester</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_physical_tester.sv">sdram/sdram_physical_tester.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram_ctrl/sdram_top.md">sdram_top</a></td>
+<td>Top-Level SDRAM Interface (Wrapper).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram_ctrl/sdram_top.sv">sdram_ctrl/sdram_top.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramCmdArbiter.md">SdramCmdArbiter</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_arbiter.sv">sdram/sdram_arbiter.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/SdramController.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_33.sv">framebuffer/FramebufferControllerPingPong_33.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/SdramController_2.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_35.sv">framebuffer/FramebufferControllerPingPong_35.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/SdramController_3.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_34.sv">framebuffer/FramebufferControllerPingPong_34.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/SdramController_4.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/FramebufferControllerPingPong_32.sv">framebuffer/FramebufferControllerPingPong_32.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_5.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_140.sv">sdram/sdram_ctrl_140.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_6.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_00.sv">sdram/sdram_ctrl_00.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_7.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_65.sv">sdram/sdram_ctrl_65.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_8.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_66.sv">sdram/sdram_ctrl_66.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_9.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_610.sv">sdram/sdram_ctrl_610.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_10.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_69.sv">sdram/sdram_ctrl_69.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_11.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_68.sv">sdram/sdram_ctrl_68.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_12.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_67.sv">sdram/sdram_ctrl_67.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramController_13.md">SdramController</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl.sv">sdram/sdram_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerAdvanced.md">SdramControllerAdvanced</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_70.sv">sdram/sdram_ctrl_70.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/framebuffer/SdramControllerFinal.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/framebuffer/framebuffer_ctrl.sv">framebuffer/framebuffer_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_2.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_103.sv">sdram/sdram_ctrl_103.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_3.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_104.sv">sdram/sdram_ctrl_104.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_4.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_120.sv">sdram/sdram_ctrl_120.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_5.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_81.sv">sdram/sdram_ctrl_81.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_6.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_130.sv">sdram/sdram_ctrl_130.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_7.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_71.sv">sdram/sdram_ctrl_71.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_8.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_110.sv">sdram/sdram_ctrl_110.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_9.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_80.sv">sdram/sdram_ctrl_80.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_10.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_105.sv">sdram/sdram_ctrl_105.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_11.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_131.sv">sdram/sdram_ctrl_131.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_12.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_100.sv">sdram/sdram_ctrl_100.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_13.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_101.sv">sdram/sdram_ctrl_101.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_14.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_102.sv">sdram/sdram_ctrl_102.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_15.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_711.sv">sdram/sdram_ctrl_711.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramControllerFinal_16.md">SdramControllerFinal</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_ctrl_90.sv">sdram/sdram_ctrl_90.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramDriver.md">SdramDriver</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_driver.sv">sdram/sdram_driver.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramDriverStub.md">SdramDriverStub</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_stub.sv">sdram/sdram_stub.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SdramToAxiStreamRead.md">SdramToAxiStreamRead</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/sdram_to_axis.sv">sdram/sdram_to_axis.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/seven_seg_decoder.md">seven_seg_decoder</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/seven_seg_decoder.sv">utils/seven_seg_decoder.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/seven_seg_hex_mux.md">seven_seg_hex_mux</a></td>
+<td>Multiplexovaný 7-segmentový ovládač (HEX dekodér).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/seven_seg_hex_mux.sv">utils/seven_seg_hex_mux.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/seven_segment_mux.md">seven_segment_mux</a></td>
+<td>Multiplexovaný ovládač 7-segmentového displeja (BCD).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/seven_segment_mux.sv">utils/seven_segment_mux.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/SimpleSdramTester.md">SimpleSdramTester</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/simple_sdram_tester.sv">sdram/simple_sdram_tester.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/buffer/skid_buffer.md">skid_buffer</a></td>
+<td>Full-Throughput Pipeline Register (Skid Buffer).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/buffer/skid_buffer.sv">buffer/skid_buffer.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/buffer/sync_fifo.md">sync_fifo</a></td>
+<td>Synchrónne FIFO s podporou Byte Enable.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/buffer/sync_fifo.sv">buffer/sync_fifo.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/Top.md">Top</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/top_wr_20.sv">sdram/top_wr_20.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/sdram/Top_2.md">Top</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/sdram/top_wr_10.sv">sdram/top_wr_10.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/up_down_counter.md">up_down_counter</a></td>
+<td>8-bitový synchrónny reverzibilný (up/down) čítač.</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/up_down_counter.sv">utils/up_down_counter.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga/vga_ctrl.md">vga_ctrl</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga/vga_ctrl.sv">vga/vga_ctrl.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga/vga_ctrl_2.md">vga_ctrl</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga/vga_ctrl_2.sv">vga/vga_ctrl_2.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga/vga_line.md">vga_line</a></td>
+<td>-</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga/vga_line.sv">vga/vga_line.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga/vga_pixel_xy.md">vga_pixel_xy</a></td>
+<td>Generátor VGA súradníc pixelov (X, Y)</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga/vga_pixel_xy.sv">vga/vga_pixel_xy.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/vga/vga_timing.md">vga_timing</a></td>
+<td>VGA generátor časovania</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/vga/vga_timing.sv">vga/vga_timing.sv</a></td>
+</tr>
+<tr>
+<td><a href="modules/utils/vga_timing_generator.md">vga_timing_generator</a></td>
+<td>Generátor časovania pre VGA (HSync, VSync, Blanking).</td>
+<td><a href="https://github.com/risapav/fpga_ep4ce55f23/blob/main/src/utils/vga_timing_generator.sv">utils/vga_timing_generator.sv</a></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

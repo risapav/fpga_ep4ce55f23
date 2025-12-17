@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>axis_to_vga</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-axis_to_vga">Modul <code>axis_to_vga</code></h1>
+<h2 id="popis">Popis</h2>
+<p>AXI-Stream na VGA prevodník s časovaním a registrovaným výstupom.</p>
+<p>Modul číta AXI4-Stream dáta a generuje VGA signály.
+Implementuje slave rozhranie s back-pressure riadeným aktívnou oblasťou.
+Všetky výstupy sú registrované pre čisté časovanie.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>H_ACT</code>: Aktívne pixely horizontálne.</li>
+<li><code>H_FP</code>: Front Porch horizontálne.</li>
+<li><code>H_SP</code>: Sync Pulse horizontálne.</li>
+<li><code>H_BP</code>: Back Porch horizontálne.</li>
+<li><code>V_ACT</code>: Aktívne riadky vertikálne.</li>
+<li><code>V_FP</code>: Front Porch vertikálne.</li>
+<li><code>V_SP</code>: Sync Pulse vertikálne.</li>
+<li><code>V_BP</code>: Back Porch vertikálne.</li>
+<li><code>H_SYNC_POLARITY</code>: Polarita HSync (1=Active High).</li>
+<li><code>V_SYNC_POLARITY</code>: Polarita VSync (1=Active High).</li>
+<li><code>OUTPUT_FORMAT</code>: Formát farby (565 alebo 888).</li>
+<li><code>AXI_DATA_WIDTH</code>: Šírka vstupu (16 alebo 24+).</li>
+<li><code>BLANKING_COLOR_888</code>: Farba pozadia pre 888.</li>
+<li><code>BLANKING_COLOR_565</code>: Farba pozadia pre 565.</li>
+</ul>
+</body>
+</html>

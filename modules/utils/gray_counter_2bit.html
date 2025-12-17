@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>gray_counter_2bit</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-gray_counter_2bit">Modul <code>gray_counter_2bit</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Synchrónny 2-bitový čítač s Grayovým kódom.</p>
+<p>Modul implementuje 2-bitový čítač, ktorý prechádza sekvenciou
+Grayovho kódu: 00 -&gt; 01 -&gt; 11 -&gt; 10 -&gt; 00 ...
+Čítač má asynchrónny reset (aktívny v nule) a synchrónne povolenie (enable).
+Pri resete je výstup nastavený na 2'b00.
+Ak je povolenie neaktívne, čítač si drží svoju aktuálnu hodnotu.</p>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Vstupný hodinový signál.</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Asynchrónny reset, aktívny v nule.</td>
+</tr>
+<tr>
+<td><code>en_i</code></td>
+<td>Synchrónne povolenie čítania.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>gray_count_o</code></td>
+<td>Výstupná 2-bitová hodnota Grayovho kódu.</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

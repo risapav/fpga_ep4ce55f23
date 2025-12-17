@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>sdram_ctrl</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-sdram_ctrl">Modul <code>sdram_ctrl</code></h1>
+<h2 id="popis">Popis</h2>
+<p>SDRAM Core Controller.</p>
+<p>Hlavný radič SDRAM pamäte. Obsahuje stavový automat pre inicializáciu,
+refresh a read/write operácie. Využíva interné Skid Buffery a FIFO pre
+oddelenie časovania a burst prenosy.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>CFifoAddrWidth</code>: Šírka adresy interných FIFO.</li>
+<li><code>T_*_CYCLES</code>: Časovanie SDRAM (definované v sdram_pkg).</li>
+</ul>
+</body>
+</html>

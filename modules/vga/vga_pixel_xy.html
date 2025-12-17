@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>vga_pixel_xy</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-vga_pixel_xy">Modul <code>vga_pixel_xy</code></h1>
+<h2 id="popis">Popis</h2>
+<p>Generátor VGA súradníc pixelov (X, Y)</p>
+<p>Modul <code>vga_pixel_xy</code> generuje súradnice aktuálneho pixelu na obrazovke (X, Y)
+na základe hodín (pixel clock), pulzov konca riadku (eol_i) a snímky (eof_i).
+Pozícia bodu (X, Y), ktorý sa nachádza vo viditeľnej časti obrazu.
+Inkrementuje X každý takt a resetuje ho na konci riadku. Y sa inkrementuje
+na konci každého riadku a resetuje na konci snímky. Vhodné na generovanie
+pozície pre grafický výstup v rámci VGA časovania.</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>[in]</code>: MAX_COUNTER_H   Najvyššia hodnota, ktorú dosiahne čítač počítajúci pozíciu v H smere</li>
+<li><code>[in]</code>: MAX_COUNTER_V   Najvyššia hodnota, ktorú dosiahne čítač počítajúci pozíciu v V smere</li>
+</ul>
+<h2 id="vstupy-input">Vstupy (input)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clk_i</code></td>
+<td>Hodinový signál – pixel clock.</td>
+</tr>
+<tr>
+<td><code>rst_ni</code></td>
+<td>Asynchrónny reset (aktívny v L).</td>
+</tr>
+<tr>
+<td><code>enable_i</code></td>
+<td>Povolenie inkrementácie (aktivuje čítanie X/Y).</td>
+</tr>
+<tr>
+<td><code>eol_i</code></td>
+<td>Pulz konca riadku – resetuje X a inkrementuje Y.</td>
+</tr>
+<tr>
+<td><code>eof_i</code></td>
+<td>Pulz konca snímky – resetuje Y.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="vystupy-output">Výstupy (output)</h2>
+<table>
+<thead>
+<tr>
+<th>Názov</th>
+<th>Popis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x_o</code></td>
+<td>Pozícia X súradnice v aktívnej časti obrazu</td>
+</tr>
+<tr>
+<td><code>y_o</code></td>
+<td>Pozícia Y súradnice v aktívnej časti obrazu</td>
+</tr>
+</tbody>
+</table>
+<h2 id="priklady-pouzitia">Príklady použitia</h2>
+<pre class="codehilite"><code class="language-systemverilog">Názorný príklad použitia:
+
+import vga_pkg::*;
+
+vga_pixel_xy #(
+.MAX_COUNTER_H(MaxPosCounterX),
+.MAX_COUNTER_V(MaxPosCounterY)
+) u_pixel_xy (
+.clk_i(clk),
+.rst_ni(rst_n),
+.enable_i(1'b1),
+.eol_i(eol),
+.eof_i(eof),
+.x_o(x),
+.y_o(y)
+);
+</code></pre>
+</body>
+</html>

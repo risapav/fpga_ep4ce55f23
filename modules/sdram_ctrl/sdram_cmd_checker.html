@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<title>sdram_cmd_checker</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ccc; padding: 0.5rem; }
+th { background: #f0f0f0; }
+a { color: #0366d6; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; }
+pre { background-color: #f5f5f5; padding: 1rem; overflow-x: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1 id="modul-sdram_cmd_checker">Modul <code>sdram_cmd_checker</code></h1>
+<h2 id="popis">Popis</h2>
+<p>SDRAM Command Validator (Gatekeeper).</p>
+<p>Validuje príkazy pred vstupom do radiča.
+- Bráni nelegálnym operáciám (Row Conflict, Bank Busy).
+- Udržiava "tieňový stav" (Shadow State) bánk pre predikciu konfliktov.
+- Rieši deadlocky tým, že chybné príkazy zahodí (akceptuje handshake, ale nepošle ďalej).</p>
+<h2 id="parametre">Parametre</h2>
+<ul>
+<li><code>C_NUM_BANKS</code>: Počet bánk (automaticky).</li>
+<li><code>T_*_CYCLES</code>: Časovanie pre kontrolu busy stavov.</li>
+</ul>
+</body>
+</html>
